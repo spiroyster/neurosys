@@ -1,0 +1,60 @@
+Requirements:
+
+Need to load save layers/models and their states.
+
+layer -> has x number of cells. (aka 1D array... aka tensor)
+
+So the connection is the weight...
+The neuron has the activation...
+Neuron has bias...
+
+The bias is what the activation function needs to exceed in order to fire?
+
+
+So essentially a neuron has the activation function and bias.
+
+Layer has neurons with same activation function, but different bias.
+
+nueral model (input -> layer -> layer -> output);
+
+When compiling a model. layers are connected in in->out fashion left to right... 
+
+Each layer given an ID in ascending order...
+
+then the synpases/connections can be constructed/queried on the fly...
+
+A1 ------ B1
+       /
+ A2B1 /
+     /
+    /
+A2 /------ B2
+
+
+So they are stored like this...
+
+An = activation function and bias
+AnBn = weight
+
+[A1] [A1B1 A1B2 A1B3 ... A1Bn]
+[A2] [A2B1 A2B2 A2B3 ... A2Bn]
+
+[B1] [B1C1 B1C2 ... B1Cn]
+[B2] [B2C1 B2C2 ... B2Cn]
+
+
+[C1]
+[C2]
+
+to construct B -> A we can take the column  ...
+
+i.e for B3 -> An 
+A1 [2]
+A2 [2]
+A3 [2]
+etc..
+
+
+
+
+
