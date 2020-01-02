@@ -3,16 +3,12 @@
 
 #include "..\include\neurosys.hpp"
 
-namespace
-{
-}
-
 TEST_CASE("modelConstruction11", "[modelConstruction11]")
 {
 	// single model with single layer...
 	neurosys::model m({ 
-			neurosys::layer(1, neurosys::cell(42.0, neurosys::activation::sigmoid)),
-			neurosys::layer(1, neurosys::cell(54.0, neurosys::activation::linear)),
+			neurosys::layer(neurosys::activation::sigmoid, { 42.0 }),
+			neurosys::layer(neurosys::activation::sigmoid, { 54.0 }),
 		});
 
 	CHECK(m.layerCount() == 3);		// two original layers + synapse layer between them.
@@ -22,28 +18,23 @@ TEST_CASE("modelConstruction11", "[modelConstruction11]")
 
 	// input layer...
 	CHECK(m[0].size() == 1);
-	CHECK(m[0][0].second == neurosys::activation::sigmoid);
-	CHECK(m[0][0].first == 42.0);
+	//CHECK(m[0].activationFn() == neurosys::activation::sigmoid);
+	CHECK(m[0][0] == 42.0);
 
 	// output layer...
 	CHECK(m[1].size() == 1);
-	CHECK(m[1][0].second == neurosys::activation::linear);
-	CHECK(m[1][0].first == 54.0);
+	//CHECK(m[1].activationFn() == neurosys::activation::linear);
+	CHECK(m[1][0] == 54.0);
 
-	CHECK(m.synapses(0, 0).size() == m.output().size());
+	CHECK(m.synapses(0, 0).values().size() == m.output().values().size());
 	
 }
 
 TEST_CASE("modelConstruction12", "[modelConstruction12]")
 {
-	neurosys::layer input(1, neurosys::cell(42.0, neurosys::activation::sigmoid));
-	
-	neurosys::layer output(2, neurosys::cell(1.0, neurosys::activation::linear));
-	{
-		unsigned int n = 0;
-		std::for_each(output.begin(), output.end(), [&n](neurosys::cell& c) { c.first = static_cast<neurosys::payload>(n); ++n; });
-	}
-	
+	neurosys::layer input(neurosys::activation::sigmoid, { 42.0 });
+	neurosys::layer output(neurosys::activation::sigmoid, 2, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
+
 	// single model with no hidden layers
 	neurosys::model m({ input, output });
 
@@ -58,18 +49,9 @@ TEST_CASE("modelConstruction12", "[modelConstruction12]")
 
 TEST_CASE("modelConstruction22", "[modelConstruction22]")
 {
-	neurosys::layer input(2, neurosys::cell(0, neurosys::activation::sigmoid));
-	{
-		unsigned int n = 0;
-		std::for_each(input.begin(), input.end(), [&n](neurosys::cell& c) { c.first = static_cast<neurosys::payload>(n); ++n; });
-	}
-	
-	neurosys::layer output(2, neurosys::cell(0, neurosys::activation::linear));
-	{
-		unsigned int n = 0;
-		std::for_each(output.begin(), output.end(), [&n](neurosys::cell& c) { c.first = static_cast<neurosys::payload>(n); ++n; });
-	}
-	
+	neurosys::layer input(neurosys::activation::sigmoid, 2, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
+	neurosys::layer output(neurosys::activation::sigmoid, 2, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
+
 	// single model with no hidden layers
 	neurosys::model m({ input, output });
 
@@ -85,17 +67,8 @@ TEST_CASE("modelConstruction22", "[modelConstruction22]")
 
 TEST_CASE("modelConstruction33", "[modelConstruction33]")
 {
-	neurosys::layer input(3, neurosys::cell(0, neurosys::activation::sigmoid));
-	{
-		unsigned int n = 0;
-		std::for_each(input.begin(), input.end(), [&n](neurosys::cell& c) { c.first = static_cast<neurosys::payload>(n); ++n; });
-	}
-
-	neurosys::layer output(3, neurosys::cell(0, neurosys::activation::linear));
-	{
-		unsigned int n = 0;
-		std::for_each(output.begin(), output.end(), [&n](neurosys::cell& c) { c.first = static_cast<neurosys::payload>(n); ++n; });
-	}
+	neurosys::layer input(neurosys::activation::sigmoid, 3, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
+	neurosys::layer output(neurosys::activation::sigmoid, 3, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
 
 	// single model with no hidden layers
 	neurosys::model m({ input, output });
@@ -113,23 +86,9 @@ TEST_CASE("modelConstruction33", "[modelConstruction33]")
 
 TEST_CASE("modelConstruction123", "[modelConstruction123]")
 {
-	neurosys::layer input(1, neurosys::cell(0, neurosys::activation::sigmoid));
-	{
-		unsigned int n = 0;
-		std::for_each(input.begin(), input.end(), [&n](neurosys::cell& c) { c.first = static_cast<neurosys::payload>(n); ++n; });
-	}
-
-	neurosys::layer hl(2, neurosys::cell(0, neurosys::activation::sigmoid));
-	{
-		unsigned int n = 0;
-		std::for_each(hl.begin(), hl.end(), [&n](neurosys::cell& c) { c.first = static_cast<neurosys::payload>(n); ++n; });
-	}
-
-	neurosys::layer output(3, neurosys::cell(0, neurosys::activation::linear));
-	{
-		unsigned int n = 0;
-		std::for_each(output.begin(), output.end(), [&n](neurosys::cell& c) { c.first = static_cast<neurosys::payload>(n); ++n; });
-	}
+	neurosys::layer input(neurosys::activation::sigmoid, 1, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
+	neurosys::layer hl(neurosys::activation::sigmoid, 2, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
+	neurosys::layer output(neurosys::activation::sigmoid, 3, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
 
 	// single model with no hidden layers
 	neurosys::model m({ input, hl, output });
@@ -149,23 +108,9 @@ TEST_CASE("modelConstruction123", "[modelConstruction123]")
 
 TEST_CASE("iterator123", "[iterator123]")
 {
-	neurosys::layer input(1, neurosys::cell(0, neurosys::activation::sigmoid));
-	{
-		unsigned int n = 0;
-		std::for_each(input.begin(), input.end(), [&n](neurosys::cell& c) { c.first = static_cast<neurosys::payload>(n); ++n; });
-	}
-
-	neurosys::layer hl(2, neurosys::cell(0, neurosys::activation::sigmoid));
-	{
-		unsigned int n = 0;
-		std::for_each(hl.begin(), hl.end(), [&n](neurosys::cell& c) { c.first = static_cast<neurosys::payload>(n); ++n; });
-	}
-
-	neurosys::layer output(3, neurosys::cell(0, neurosys::activation::linear));
-	{
-		unsigned int n = 0;
-		std::for_each(output.begin(), output.end(), [&n](neurosys::cell& c) { c.first = static_cast<neurosys::payload>(n); ++n; });
-	}
+	neurosys::layer input(neurosys::activation::sigmoid, 1, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
+	neurosys::layer hl(neurosys::activation::sigmoid, 2, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
+	neurosys::layer output(neurosys::activation::sigmoid, 3, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
 
 	// single model with no hidden layers
 	neurosys::model m({ input, hl, output });
@@ -201,23 +146,9 @@ TEST_CASE("iterator123", "[iterator123]")
 
 TEST_CASE("backSynapses123", "[backSynapses123]")
 {
-	neurosys::layer input(1, neurosys::cell(0, neurosys::activation::sigmoid));
-	{
-		unsigned int n = 0;
-		std::for_each(input.begin(), input.end(), [&n](neurosys::cell& c) { c.first = static_cast<neurosys::payload>(n); ++n; });
-	}
-
-	neurosys::layer hl(2, neurosys::cell(0, neurosys::activation::sigmoid));
-	{
-		unsigned int n = 0;
-		std::for_each(hl.begin(), hl.end(), [&n](neurosys::cell& c) { c.first = static_cast<neurosys::payload>(n); ++n; });
-	}
-
-	neurosys::layer output(3, neurosys::cell(0, neurosys::activation::linear));
-	{
-		unsigned int n = 0;
-		std::for_each(output.begin(), output.end(), [&n](neurosys::cell& c) { c.first = static_cast<neurosys::payload>(n); ++n; });
-	}
+	neurosys::layer input(neurosys::activation::sigmoid, 1, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
+	neurosys::layer hl(neurosys::activation::sigmoid, 2, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
+	neurosys::layer output(neurosys::activation::sigmoid, 3, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
 
 	// single model with no hidden layers
 	neurosys::model m({ input, hl, output });
@@ -231,11 +162,11 @@ TEST_CASE("backSynapses123", "[backSynapses123]")
 
 	CHECK(bs.size() == hl.size());
 
-	// cheange these weigths and see if the model correctly updates...
-	bs[0]->first = 12.0;
-	bs[1]->first = 13.0;
+	// change these weigths and see if the model correctly updates...
+	*bs[0] = 12.0;
+	*bs[1] = 13.0;
 
-	CHECK(m.synapses(1, 0)[0].first == 12.0);
-	CHECK(m.synapses(1, 1)[0].first == 13.0);
+	CHECK(m.synapses(1, 0)[0] == 12.0);
+	CHECK(m.synapses(1, 1)[0] == 13.0);
 
 }

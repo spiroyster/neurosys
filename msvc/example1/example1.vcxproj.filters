@@ -15,15 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\neurosys.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\MNIST.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\source\lib\neurosys.cpp">
+    <ClCompile Include="..\..\examples\example1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
