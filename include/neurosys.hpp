@@ -5,256 +5,204 @@
 #include <vector>
 #include <list>
 #include <functional>
+#include <random>
+#include <numeric>
+#include <assert.h>
 
 namespace neurosys
 {
-
-	typedef double cell;
-
+	typedef double neuron;
 
 	namespace activation
 	{
-		typedef std::function<cell(const cell& x)> fn;
+		typedef std::function<neuron(const neuron& x)> fn;
 
-		static fn linear = [](const cell& x) { return x; };
-		static fn ReLu = [](const cell& x) { return x; };
-		static fn sigmoid = [](const cell& x) { return x; };
+		static fn linear = [](const neuron& x) { return x; };
+		static fn ReLU = [](const neuron& x) { return x > 0 ? x : 0; }; 
+		static fn leakyReLU = [](const neuron& x) { return x > 0 ? x : 0.01 * x; };
+		static fn fastSigmoid = [](const neuron& x) { return x / (1.0+abs(x)); };
+		static fn sigmoid= [](const neuron& x) { return 1.0 / ( 1.0 + exp(-x)); };
 	}
-	
 
-	class layer
+	struct layer
 	{
 	public:
-		layer()
-			: fn_(activation::linear)
+		layer(const std::vector<neuron>& neurons, activation::fn activation) : neurons_(neurons), activation_(activation), bias_(0) {}
+		layer(const std::vector<neuron>& neurons, activation::fn activation, double bias) : neurons_(neurons), activation_(activation), bias_(bias) {}
+		layer(unsigned int size, activation::fn activation) : neurons_(size, 0), activation_(activation), bias_(0) {}
+		layer(unsigned int size, activation::fn activation, double bias) : neurons_(size, 0), activation_(activation), bias_(bias) {}
+		
+		layer& operator=(const layer& rhs)
 		{
-		}
-
-		layer(std::size_t sz, const activation::fn& f)
-			:	values_(sz), fn_(f)
-		{
-		}
-
-		layer(const activation::fn& f, std::size_t sz, std::function<cell(std::size_t n)> initialiser)
-			: values_(sz), fn_(f)
-		{
-			for (std::size_t n = 0; n < sz; ++n)
-				values_[n] = initialiser(n);
-		}
-
-		layer(const activation::fn& f, const std::vector<cell>& values)
-			: values_(values), fn_(f)
-		{
+			neurons_ = rhs.neurons_;
+			activation_ = rhs.activation_;
+			bias_ = rhs.bias_;
+			return *this;
 		}
 
 		bool operator==(const layer& rhs) const
 		{
-			return values_ == rhs.values_;
-			// need to compare functions ... && fn_ == rhs.fn_;
+			return neurons_ == rhs.neurons_ && bias_ == rhs.bias_; // also check activation functions are the same?
+		}
+		bool operator!=(const layer& rhs) const
+		{
+			return !(*this == rhs);
 		}
 
-		cell& operator[](std::size_t n) { return values_[n]; }
-		const cell& operator[](std::size_t n) const { return values_[n]; }
-		
-		std::size_t size() const { return values_.size(); }
-
-		std::vector<cell>::const_iterator begin() const { return values_.begin(); }
-		std::vector<cell>::const_iterator end() const { return values_.end(); }
-
-		std::vector<cell>::iterator begin() { return values_.begin(); }
-		std::vector<cell>::iterator end() { return values_.end(); }
-
-		const std::vector<cell>& values() const { return values_; }
-		std::vector<cell>& values() { return values_; }
-
-		const activation::fn& activationFn() const { return fn_; }
-
-	private:
-		std::vector<cell> values_;
-		const activation::fn& fn_;
-	};
-
-
-	// model (one or more layers)... first layer is input, last layer is output
-	class model
-	{
-	public:
-
-		model(const std::vector<layer>& layers)
+		std::size_t largest()
 		{
-			if (layers.empty())
-				throw std::exception("Model requires at least two layers.");
-
-			std::size_t layerCount = layers.size();
-			for (unsigned int l = 0; l < (layers.size() - 1); ++l)
-				layerCount += layers[l].values().size();
-			
-			layers_.reserve(layerCount);
-
-			// we need to create the synapse layers...
-			for (unsigned int l = 0; l < (layers.size() - 1); ++l)
-			{
-				// get the current layer...
-				layerIndex_.push_back(layers_.size()); 
-				layers_.push_back(layers[l]);
-
-				// create a new layer for each current layer neuron
-				for (unsigned int ln = 0; ln < layers[l].values().size(); ++ln)
-					layers_.push_back(layer(layers[l + 1].values().size(), layers[l].activationFn()));
-			}
-
-			// add the last layer...
-			layers_.push_back(layers.back());
-			layerIndex_.push_back(layers_.size() - 1);
+			return std::distance(neurons_.begin(), std::max_element(neurons_.begin(), neurons_.end()));
 		}
 
-		std::size_t paramterCount() const
+		neuron sum()
 		{
-			std::size_t result = 0;
-			for (unsigned int l = 0; l < layers_.size(); ++l)
-				result += layers_[l].values().size();
+			return std::accumulate(neurons_.begin(), neurons_.end(), 0.0);
+		}
+
+		layer squaredError(const layer& expected)
+		{
+			// assert layers have same number of items...
+			assert(neurons_.size() == expected.neurons_.size());
+
+			layer result = expected;
+			for (unsigned int n = 0; n < neurons_.size(); ++n)
+				result.neurons_[n] = 0.5 * (result.neurons_[n] - neurons_[n]);
 			return result;
 		}
 
-		std::size_t layerCount() const
-		{
-			return layers_.size();
-		}
-		
-		// get the layer (layerNum relates to original input layer index).
-		const layer& operator[](unsigned int layerIndex) const
-		{
-			return layers_[layerIndex_[layerIndex]];
-		}
+		std::vector<neuron> neurons_;
+		activation::fn activation_;
+		double bias_;
+	};
 
-		layer& operator[](unsigned int layerIndex)
+	struct network
+	{
+		network(const std::vector<layer>& layers) : layers_(layers)
 		{
-			return layers_[layerIndex_[layerIndex]];
-		}
+			assert(layers_.size() >= 2);
 
-		// get the input layer...
-		const layer& input() const
-		{
-			return layers_.front();
+			// construct the weight matrices...
+			weights_.reserve(layers_.size() - 1);
+			for (unsigned int l = 0; l < layers_.size() - 1; ++l)
+				weights_.push_back(std::vector<neuron>(layers_[l].neurons_.size() * layers_[l+1].neurons_.size()));
 		}
 
-		// get the output layer...
-		const layer& output() const
+		void reset()
 		{
-			return layers_.back();
-		}
-
-		const layer& synapses(unsigned int layerNum, unsigned int neuron) const
-		{
-			return layers_[layerIndex_[layerNum] + neuron + 1];
-		}
-
-		class iterator
-		{
-		public:
-			iterator() : layerNum_(0), neuron_(0), model_(0), cell_(0) {}
-
-			iterator(unsigned int layerNum, unsigned int neuron, model& m, cell& c)
-				: layerNum_(layerNum), neuron_(neuron), model_(&m), cell_(&c)
-			{
-			}
-
-			bool operator==(const iterator& rhs) const
-			{
-				return rhs.layerNum_ == layerNum_ && rhs.neuron_ == neuron_ && rhs.model_ == model_ && rhs.cell_ == cell_;
-			}
-			bool operator!=(const iterator& rhs) const
-			{
-				return !(*this == rhs);
-			}
-
-			cell* operator*() { return cell_; }
-
-			// next neuron in layer...
-			iterator down() { return model_->cell(layerNum_, neuron_ + 1); }
-
-			// prev neuron in layer...
-			iterator up() { return model_->cell(layerNum_, neuron_ - 1); }
-
-			// next laayer neuron...
-			iterator forward(unsigned int neuron) { return model_->cell(layerNum_ + 1, neuron); }
-
-			// prev layer neuron...
-			iterator back(unsigned int neuron) { return model_->cell(layerNum_ - 1, neuron); }
-
-			// back layer...
-
-			// forward layer...
-
-			// back synapses
-			//std::vector<cell*> forwardSynapses()
-			//{
-				
-			//}
-			
-			// forward synpases
-			std::vector<cell*> backSynapses()
-			{
-				std::vector<neurosys::cell*> result;
-				if (layerNum_ > 0)
-				{
-					std::size_t startLayer = model_->layerIndex_[layerNum_ - 1];
-					std::size_t endLayer = model_->layerIndex_[layerNum_];
-					result.reserve(model_->layers_[startLayer].values().size());
-					for (std::size_t l = startLayer + 1; l < endLayer; ++l)
-						result.push_back(&model_->layers_[l][neuron_]);
-				}
-				return result;
-			}
-
-		private:
-			unsigned int layerNum_;
-			unsigned int neuron_;
-			model* model_;
-			cell* cell_;
-		};
-
-		iterator cell(unsigned int layerNum, unsigned int neuron)
-		{
-			if (layerNum < layerIndex_.size())
-			{
-				layer& lay = (*this)[layerNum];
-				if (neuron < lay.values().size())
-					return iterator(layerNum, neuron, *this, lay[neuron]);
-			}
-			return iterator();
-		}
-
-		// reset the weights/nodes in the model (layerNum, neuron)
-		typedef std::function<neurosys::cell(unsigned int, unsigned int)> resetCallback;
-
-		void reset(resetCallback layerResetFunc, resetCallback synapseResetFunc)
-		{
-			unsigned int currentLayerNum = 0;
+			std::default_random_engine rd;
+			std::mt19937 eng(rd());
+			std::uniform_real_distribution<double> dist(0.0, 1.0);
 			for (unsigned int l = 0; l < layers_.size(); ++l)
 			{
-				layer& lay = layers_[l];
-				if (l == layerIndex_[currentLayerNum])
-				{
-					for (unsigned int n = 0; n < lay.size(); ++n)
-						lay[n] = layerResetFunc(currentLayerNum, n);
-					++currentLayerNum;
-				}
-				else
-				{
-					for (unsigned int n = 0; n < lay.size(); ++n)
-						lay[n] = synapseResetFunc(currentLayerNum, n);
-				}
+				for (unsigned int n = 0; n < layers_[l].neurons_.size(); ++n)
+					layers_[l].neurons_[n] = dist(eng);
+				layers_[l].bias_ = dist(eng);
 			}
+
+			for (unsigned int w = 0; w < weights_.size(); ++w)
+				for (unsigned int n = 0; n < weights_[w].size(); ++n)
+					weights_[w][n] = dist(eng);
 		}
 
+		// l1 = layer, l1n = layer1 neuron, l2n = layer2 neuron
+		neuron& weight(unsigned int l1, unsigned int l1n, unsigned int l2n)
+		{
+			assert(l1 < layers_.size() - 1);
+			assert(l1n < layers_[l1].neurons_.size());
+			assert(l2n < layers_[l1 + 1].neurons_.size());
 
-	private:
+			return weights_[l1][(layers_[l1].neurons_.size() * l1n) + l2n];
+		}
+
+		const neuron& weight(unsigned int l1, unsigned int l1n, unsigned int l2n) const
+		{
+			assert(l1 < layers_.size() - 1);
+			assert(l1n < layers_[l1].neurons_.size());
+			assert(l2n < layers_[l1 + 1].neurons_.size());
+
+			return weights_[l1][(layers_[l1].neurons_.size() * l1n) + l2n];
+		}
+
+		void weights(unsigned int l1, unsigned int l1n, const std::vector<neuron>& weights)
+		{
+			assert(l1 < layers_.size() - 1);
+			assert(l1n < layers_[l1].neurons_.size());
+			assert(weights.size() == layers_[l1 + 1].neurons_.size());
+
+			std::size_t l2size = layers_[l1 + 1].neurons_.size();
+			for (std::size_t n = 0; n < l2size; ++n)
+				weights_[l1][(l1n * l2size) + n] = weights[n];
+		}
+
+		std::vector<neuron*> forwardWeights(unsigned int l1, unsigned int l1n)
+		{
+			// assert not last layer...
+			assert(l1 != layers_.size());
+			assert(l1n < layers_[l1].neurons_.size());
+			
+			std::size_t l2size = layers_[l1 + 1].neurons_.size();
+			std::vector<neuron*> result(l2size);
+			for (std::size_t n = 0; n < l2size; ++n)
+				result[n] = &weights_[l1][(l2size * l1n) + n];
+			return result;
+		}
+
+		std::vector<neuron*> backWeights(unsigned int l2, unsigned int l2n)
+		{
+			// assert not first layer...
+			assert(l2 > 0);
+			assert(l2n < layers_[l2-1].neurons_.size());
+
+			std::size_t l1size = layers_[l2 - 1].neurons_.size();
+			std::size_t l2size = layers_[l2].neurons_.size();
+			std::vector<neuron*> result(l1size);
+			for (std::size_t n = 0; n < l1size; ++n)
+				result[n] = &weights_[l2 - 1][(n * l2size) + l2n];
+			return result;
+		}
+
 		std::vector<layer> layers_;
-		std::vector<std::size_t> layerIndex_;
+		std::vector<std::vector<neuron>> weights_;
 	};
+
+
+	namespace feedForward
+	{
+		neuron dot(const std::vector<neuron>& a, unsigned int aStart, const std::vector<neuron>& b)
+		{
+			neuron result = 0;
+			for (unsigned int i = aStart, j = 0; j < b.size(); ++i, ++j) 
+				result += a[i] * b[j];
+			return result;
+		}
+
+		layer feed(const layer& currentLayer, const layer& nextLayer, const std::vector<neuron>& weights)
+		{
+			layer result = nextLayer;
+			for (unsigned int r = 0; r < result.neurons_.size(); ++r)
+				result.neurons_[r] = result.activation_(dot(weights, r * static_cast<unsigned int>(currentLayer.neurons_.size()), currentLayer.neurons_) + nextLayer.bias_);
+			return result;
+		}
+
+		layer observation(const network& n, const layer& input)
+		{
+			layer result = input;
+			for (unsigned int hl = 1; hl < n.layers_.size(); ++hl)
+				result = feed(result, n.layers_[hl], n.weights_[hl-1]);
+			return result;
+		}
+	}
 	
 
+	// calculate error...
+
+	// calculate cost...
+
+	// backPropagation
+	namespace backPropagation
+	{
+
+	}
 
 
 }
