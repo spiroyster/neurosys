@@ -3,6 +3,15 @@
 
 #include "..\include\neurosys.hpp"
 
+namespace
+{
+	bool ApproxEquals(const double a, const double b, unsigned int dp)
+	{
+		double numerDenom = static_cast<double>(pow(10, dp));
+		return std::round(a * numerDenom) / numerDenom == std::round( b *numerDenom) / numerDenom;
+	}
+}
+
 TEST_CASE("linear activation", "[activation]")
 {
 	CHECK(neurosys::activation::linear(-1.0) == -1.0);
@@ -133,7 +142,15 @@ TEST_CASE("layer sum", "[layer]")
 }
 
 // layer squared error
+TEST_CASE("layer squaredError", "[layer]")
+{
+	{
+		neurosys::layer i({ 0.1, 0.2, 0.3, 0.4, 0.5 }, neurosys::activation::linear);
+		neurosys::layer j({ 0.6, 0.7, 0.8, 0.9, 1.0 }, neurosys::activation::linear);
+		CHECK(i.squaredError(j) == 0.25);
+	}
 
+}
 
 // layer assignment
 TEST_CASE("layer assignment", "[layer]")
@@ -237,24 +254,24 @@ TEST_CASE("network weights", "[network]")
 		});
 
 	net.weights(0, 0, { 0.1, 0.2 });
-	CHECK(net.weights_[0][0] == 0.1);
-	CHECK(net.weights_[0][1] == 0.2);
+	CHECK(net.weight(0, 0, 0) == 0.1);
+	CHECK(net.weight(0, 0, 1) == 0.2);
 
 	net.weights(0, 1, { 1.1, 1.2 });
-	CHECK(net.weights_[0][2] == 1.1);
-	CHECK(net.weights_[0][3] == 1.2);
+	CHECK(net.weight(0, 1, 0) == 1.1);
+	CHECK(net.weight(0, 1, 1) == 1.2);
 
 	net.weights(0, 2, { 2.1, 2.2 });
-	CHECK(net.weights_[0][4] == 2.1);
-	CHECK(net.weights_[0][5] == 2.2);
+	CHECK(net.weight(0, 2, 0) == 2.1);
+	CHECK(net.weight(0, 2, 1) == 2.2);
 
 	net.weights(1, 0, { 3.1, 3.2 });
-	CHECK(net.weights_[1][0] == 3.1);
-	CHECK(net.weights_[1][1] == 3.2);
+	CHECK(net.weight(1, 0, 0) == 3.1);
+	CHECK(net.weight(1, 0, 1) == 3.2);
 
 	net.weights(1, 1, { 4.1, 4.2 });
-	CHECK(net.weights_[1][2] == 4.1);
-	CHECK(net.weights_[1][3] == 4.2);
+	CHECK(net.weight(1, 1, 0) == 4.1);
+	CHECK(net.weight(1, 1, 1) == 4.2);
 
 }
 
@@ -369,9 +386,46 @@ TEST_CASE("feedForward dot", "[feedForward]")
 // multiply
 TEST_CASE("feedForward feed", "[feedForward network]")
 {
+	// Create the network with empty activation values and 0.5 bias...
+	neurosys::network net({
+		neurosys::layer({ 1.0, 2.0, 3.0 }, neurosys::activation::linear),
+		neurosys::layer({ 4.0, 5.0 }, neurosys::activation::sigmoid, 0.5),
+		neurosys::layer({ 6.0, 7.0 }, neurosys::activation::sigmoid, 0.5)
+		});
 
+	// we need to set the weights...
+	net.weights(0, 0, { 0.1, 0.2 });
+	net.weights(0, 1, { 0.3, 0.4 });
+	net.weights(0, 2, { 0.5, 0.6 });
+	net.weights(1, 0, { 0.7, 0.8 });
+	net.weights(1, 1, { 0.9, 0.1 });
+
+	// single feed forward and check hidden layer values...
+	neurosys::layer result = neurosys::feedForward::feed(net.layers_[0], net.layers_[1], net.weights_[0]);
+
+	// check the result is the same as the hidden layer...
+	CHECK(result.neurons_.size() == net.layers_[1].neurons_.size());
+	for (unsigned int i = 0; i < result.neurons_.size(); ++i) 
+	{
+		Approx target = Approx(result.neurons_[i]).epsilon(0.01);
+		CHECK(target == net.layers_[1].neurons_[i]);
+	}
+		
+	result = neurosys::feedForward::feed(net.layers_[1], net.layers_[2], net.weights_[1]);
+
+	// check the result is the same as the expected output layer...
+	CHECK(result.neurons_.size() == net.layers_[2].neurons_.size());
+	for (unsigned int i = 0; i < result.neurons_.size(); ++i)
+	{
+		Approx target = Approx(result.neurons_[i]).epsilon(0.01);
+		CHECK(target == net.layers_[2].neurons_[i]);
+	}
 }
 
+
+
+
+// back propagation...
 
 
 TEST_CASE("feedForward observation", "[feedForward network]")
@@ -381,7 +435,7 @@ TEST_CASE("feedForward observation", "[feedForward network]")
 	// Create the network with empty activation values and 0.5 bias...
 	neurosys::network net({
 		neurosys::layer({ 1.0, 4.0, 5.0 }, neurosys::activation::linear),
-		neurosys::layer({ 0.9866, 0.995 }, neurosys::activation::sigmoid, 0.5),
+		neurosys::layer({ 0.9866, 0.9950 }, neurosys::activation::sigmoid, 0.5),
 		neurosys::layer({ 0.8896, 0.8004 }, neurosys::activation::sigmoid, 0.5)
 		});
 
@@ -396,15 +450,30 @@ TEST_CASE("feedForward observation", "[feedForward network]")
 	neurosys::layer result = neurosys::feedForward::feed(net.layers_[0], net.layers_[1], net.weights_[0]);
 
 	// check the result is the same as the hidden layer...
-	CHECK(result.neurons_ == net.layers_[1].neurons_);
+	CHECK(result.neurons_.size() == net.layers_[1].neurons_.size());
+	for (unsigned int i = 0; i < result.neurons_.size(); ++i)
+	{
+		Approx target = Approx(result.neurons_[i]).epsilon(0.01);
+		CHECK(target == net.layers_[1].neurons_[i]);
+	}
 
 	result = neurosys::feedForward::feed(net.layers_[1], net.layers_[2], net.weights_[1]);
 
 	// check the result is the same as the expected output layer...
-	CHECK(result.neurons_ == net.layers_[2].neurons_);
-	
+	CHECK(result.neurons_.size() == net.layers_[2].neurons_.size());
+	for (unsigned int i = 0; i < result.neurons_.size(); ++i)
+	{
+		Approx target = Approx(result.neurons_[i]).epsilon(0.01);
+		CHECK(target == net.layers_[2].neurons_[i]);
+	}
 
-	// Perform the single back propagation...
+	// t1 = 0.1, t2 = 0.05
+
+	// Check the squares error...
+	//neurosys::layer expected
+
+	// Perform the back propagation....
+
 
 
 }
@@ -414,183 +483,3 @@ TEST_CASE("feedForward observation", "[feedForward network]")
 
 	// https://cs.stanford.edu/people/karpathy/convnetjs/intro.html
 
-
-
-// feed forward dot
-
-// feed forward multiply
-
-
-// feed forward observation
-
-
-//
-//#include "..\include\neurosys.hpp"
-//
-//TEST_CASE("modelConstruction11", "[modelConstruction11]")
-//{
-//	// single model with single layer...
-//	neurosys::model m({ 
-//			neurosys::layer(neurosys::activation::sigmoid, { 42.0 }),
-//			neurosys::layer(neurosys::activation::sigmoid, { 54.0 }),
-//		});
-//
-//	CHECK(m.layerCount() == 3);		// two original layers + synapse layer between them.
-//	CHECK(m.paramterCount() == 3);
-//	CHECK(m.input() == m[0]);		// input is first layer...
-//	CHECK(m.output() == m[1]);		// output is second layer...
-//
-//	// input layer...
-//	CHECK(m[0].size() == 1);
-//	//CHECK(m[0].activationFn() == neurosys::activation::sigmoid);
-//	CHECK(m[0][0] == 42.0);
-//
-//	// output layer...
-//	CHECK(m[1].size() == 1);
-//	//CHECK(m[1].activationFn() == neurosys::activation::linear);
-//	CHECK(m[1][0] == 54.0);
-//
-//	CHECK(m.synapses(0, 0).values().size() == m.output().values().size());
-//	
-//}
-//
-//TEST_CASE("modelConstruction12", "[modelConstruction12]")
-//{
-//	neurosys::layer input(neurosys::activation::sigmoid, { 42.0 });
-//	neurosys::layer output(neurosys::activation::sigmoid, 2, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
-//
-//	// single model with no hidden layers
-//	neurosys::model m({ input, output });
-//
-//	CHECK(m.layerCount() == 3);		// two original layers + synapse layer between them.
-//	CHECK(m.paramterCount() == 5);
-//	CHECK(m.input() == input);			// input is first layer...
-//	CHECK(m.output() == output);		// output is second layer...
-//	CHECK(m[0] == input);
-//	CHECK(m[1] == output);
-//	CHECK(m.synapses(0, 0).size() == output.size());
-//}
-//
-//TEST_CASE("modelConstruction22", "[modelConstruction22]")
-//{
-//	neurosys::layer input(neurosys::activation::sigmoid, 2, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
-//	neurosys::layer output(neurosys::activation::sigmoid, 2, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
-//
-//	// single model with no hidden layers
-//	neurosys::model m({ input, output });
-//
-//	CHECK(m.layerCount() == 4);		// two original layers + synapse layer between them.
-//	CHECK(m.paramterCount() == 8);
-//	CHECK(m.input() == input);			// input is first layer...
-//	CHECK(m.output() == output);		// output is second layer...
-//	CHECK(m[0] == input);
-//	CHECK(m[1] == output);
-//	CHECK(m.synapses(0, 0).size() == output.size());
-//	CHECK(m.synapses(0, 1).size() == output.size());
-//}
-//
-//TEST_CASE("modelConstruction33", "[modelConstruction33]")
-//{
-//	neurosys::layer input(neurosys::activation::sigmoid, 3, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
-//	neurosys::layer output(neurosys::activation::sigmoid, 3, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
-//
-//	// single model with no hidden layers
-//	neurosys::model m({ input, output });
-//
-//	CHECK(m.layerCount() == 5);		// two original layers + synapse layer between them.
-//	CHECK(m.paramterCount() == 15);
-//	CHECK(m.input() == input);			// input is first layer...
-//	CHECK(m.output() == output);		// output is second layer...
-//	CHECK(m[0] == input);
-//	CHECK(m[1] == output);
-//	CHECK(m.synapses(0, 0).size() == output.size());
-//	CHECK(m.synapses(0, 1).size() == output.size());
-//	CHECK(m.synapses(0, 2).size() == output.size());
-//}
-//
-//TEST_CASE("modelConstruction123", "[modelConstruction123]")
-//{
-//	neurosys::layer input(neurosys::activation::sigmoid, 1, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
-//	neurosys::layer hl(neurosys::activation::sigmoid, 2, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
-//	neurosys::layer output(neurosys::activation::sigmoid, 3, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
-//
-//	// single model with no hidden layers
-//	neurosys::model m({ input, hl, output });
-//
-//	CHECK(m.layerCount() == 6);		// two original layers + synapse layer between them.
-//	CHECK(m.paramterCount() == 14);
-//	CHECK(m.input() == input);			// input is first layer...
-//	CHECK(m.output() == output);		// output is second layer...
-//	CHECK(m[0] == input);
-//	CHECK(m[1] == hl);
-//	CHECK(m[2] == output);
-//
-//	CHECK(m.synapses(0, 0).size() == hl.size());
-//	CHECK(m.synapses(1, 0).size() == output.size());
-//	CHECK(m.synapses(1, 1).size() == output.size());
-//}
-//
-//TEST_CASE("iterator123", "[iterator123]")
-//{
-//	neurosys::layer input(neurosys::activation::sigmoid, 1, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
-//	neurosys::layer hl(neurosys::activation::sigmoid, 2, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
-//	neurosys::layer output(neurosys::activation::sigmoid, 3, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
-//
-//	// single model with no hidden layers
-//	neurosys::model m({ input, hl, output });
-//
-//	neurosys::model::iterator itr = m.cell(0, 0);
-//
-//	// check not valid to go back...
-//	CHECK(itr.back(0) == neurosys::model::iterator());
-//	CHECK(!*itr.back(0));
-//	
-//	// check not valid to next or prev...
-//	CHECK(!*itr.down());
-//	CHECK(!*itr.up());
-//
-//	// move to the next...
-//	itr = itr.forward(0);
-//	CHECK(*itr);
-//
-//	// can't go up!
-//	CHECK(!*itr.up());
-//
-//	// can go down... once...
-//	CHECK(*itr.down());
-//	itr = itr.down();
-//	CHECK(!*itr.down());
-//
-//	// go to the next...
-//
-//
-//
-//
-//}
-//
-//TEST_CASE("backSynapses123", "[backSynapses123]")
-//{
-//	neurosys::layer input(neurosys::activation::sigmoid, 1, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
-//	neurosys::layer hl(neurosys::activation::sigmoid, 2, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
-//	neurosys::layer output(neurosys::activation::sigmoid, 3, [](std::size_t n) { return static_cast<neurosys::cell>(n); });
-//
-//	// single model with no hidden layers
-//	neurosys::model m({ input, hl, output });
-//
-//	neurosys::model::iterator itr = m.cell(2, 0);
-//
-//	// check valid to go back...
-//	CHECK(*itr.back(0));
-//
-//	std::vector<neurosys::cell*> bs = itr.backSynapses();
-//
-//	CHECK(bs.size() == hl.size());
-//
-//	// change these weigths and see if the model correctly updates...
-//	*bs[0] = 12.0;
-//	*bs[1] = 13.0;
-//
-//	CHECK(m.synapses(1, 0)[0] == 12.0);
-//	CHECK(m.synapses(1, 1)[0] == 13.0);
-//
-//}

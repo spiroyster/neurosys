@@ -1,7 +1,7 @@
 #ifndef NEUROSYS_MNIST_HPP
 #define NEUROSYS_MNIST_HPP
 
-#include "neurosys.hpp"
+#include "..\..\include\neurosys.hpp"
 
 #include <array>
 #include <fstream>

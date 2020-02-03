@@ -1,5 +1,5 @@
-#include "..\include\neurosys.hpp"
-#include "..\include\MNIST.hpp"
+#include "..\..\include\neurosys.hpp"
+#include "MNIST.hpp"
 
 #include <iostream>
 

@@ -59,15 +59,21 @@ namespace neurosys
 			return std::accumulate(neurons_.begin(), neurons_.end(), 0.0);
 		}
 
-		layer squaredError(const layer& expected)
+		layer squaredError(const layer& expected) const
 		{
 			// assert layers have same number of items...
 			assert(neurons_.size() == expected.neurons_.size());
 
 			layer result = expected;
 			for (unsigned int n = 0; n < neurons_.size(); ++n)
-				result.neurons_[n] = 0.5 * (result.neurons_[n] - neurons_[n]);
+				result.neurons_[n] = (result.neurons_[n] - neurons_[n]) * (result.neurons_[n] - neurons_[n]);
 			return result;
+		}
+
+		double sumSquaredError(const layer& expected) const
+		{
+			layer result = squaredError(expected);
+			return result.sum() / static_cast<double>(neurons_.size());
 		}
 
 		std::vector<neuron> neurons_;
@@ -111,42 +117,49 @@ namespace neurosys
 			assert(l1n < layers_[l1].neurons_.size());
 			assert(l2n < layers_[l1 + 1].neurons_.size());
 
-			return weights_[l1][(layers_[l1].neurons_.size() * l1n) + l2n];
+			return weights_[l1][(layers_[l1].neurons_.size() * l2n) + l1n];
 		}
 
+		// l1 = layer, l1n = layer1 neuron, l2n = layer2 neuron
 		const neuron& weight(unsigned int l1, unsigned int l1n, unsigned int l2n) const
 		{
 			assert(l1 < layers_.size() - 1);
 			assert(l1n < layers_[l1].neurons_.size());
 			assert(l2n < layers_[l1 + 1].neurons_.size());
 
-			return weights_[l1][(layers_[l1].neurons_.size() * l1n) + l2n];
+			return weights_[l1][(layers_[l1].neurons_.size() * l2n) + l1n];
 		}
 
-		void weights(unsigned int l1, unsigned int l1n, const std::vector<neuron>& weights)
+		// l1 = layer, l1n = layer1 neuron, l1weights = weights for l1 neuron
+		void weights(unsigned int l1, unsigned int l1n, const std::vector<neuron>& l1nweights)
 		{
 			assert(l1 < layers_.size() - 1);
 			assert(l1n < layers_[l1].neurons_.size());
-			assert(weights.size() == layers_[l1 + 1].neurons_.size());
+			assert(l1nweights.size() == layers_[l1 + 1].neurons_.size());
 
-			std::size_t l2size = layers_[l1 + 1].neurons_.size();
-			for (std::size_t n = 0; n < l2size; ++n)
-				weights_[l1][(l1n * l2size) + n] = weights[n];
+			std::size_t l1size = layers_[l1].neurons_.size();
+			
+			for (std::size_t n = 0; n < l1nweights.size(); ++n)
+				weights_[l1][(n * l1size) + l1n] = l1nweights[n];
 		}
 
+		// given a neuron, what are its weights to all neurons of the next layer...
 		std::vector<neuron*> forwardWeights(unsigned int l1, unsigned int l1n)
 		{
 			// assert not last layer...
 			assert(l1 != layers_.size());
 			assert(l1n < layers_[l1].neurons_.size());
 			
+			std::size_t l1size = layers_[l1].neurons_.size();
 			std::size_t l2size = layers_[l1 + 1].neurons_.size();
+
 			std::vector<neuron*> result(l2size);
 			for (std::size_t n = 0; n < l2size; ++n)
-				result[n] = &weights_[l1][(l2size * l1n) + n];
+				result[n] = &weights_[l1][(l1size * n) + l1n] ;
 			return result;
 		}
 
+		// given a neuron, what are all the weights from the previous layer to the neuron...
 		std::vector<neuron*> backWeights(unsigned int l2, unsigned int l2n)
 		{
 			// assert not first layer...
@@ -154,10 +167,10 @@ namespace neurosys
 			assert(l2n < layers_[l2-1].neurons_.size());
 
 			std::size_t l1size = layers_[l2 - 1].neurons_.size();
-			std::size_t l2size = layers_[l2].neurons_.size();
 			std::vector<neuron*> result(l1size);
+			
 			for (std::size_t n = 0; n < l1size; ++n)
-				result[n] = &weights_[l2 - 1][(n * l2size) + l2n];
+				result[n] = &weights_[l2 - 1][(l1size * l2n) + n];
 			return result;
 		}
 
@@ -171,7 +184,7 @@ namespace neurosys
 		neuron dot(const std::vector<neuron>& a, unsigned int aStart, const std::vector<neuron>& b)
 		{
 			neuron result = 0;
-			for (unsigned int i = aStart, j = 0; j < b.size(); ++i, ++j) 
+			for (unsigned int i = aStart, j = 0; j < b.size(); ++i, ++j)
 				result += a[i] * b[j];
 			return result;
 		}
@@ -201,6 +214,28 @@ namespace neurosys
 	// backPropagation
 	namespace backPropagation
 	{
+		// back propagation of weights...
+		std::vector<neuron> backPropagate(const network& n, unsigned int l2, unsigned int l1, const layer& result, const layer& expected)
+		{
+
+		}
+
+		std::vector<neuron> backPropagate(const network& n, unsigned int l2, unsigned int l1, const layer& result, const layer& expected)
+		{
+
+		}
+
+
+		// for each layer going backwards...
+		/*layer propagate(const network& n, unsigned int l2, unsigned int l1, const layer& result, const layer& expected)
+		{
+
+
+
+			return layer();
+		}*/
+
+
 
 	}
 
