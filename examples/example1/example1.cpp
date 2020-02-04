@@ -14,7 +14,7 @@ int main(int argc, char** argv)
 	try
 	{
 		std::cout << "Loading data (t10k-images-idx3-ubyte)...";
-		std::vector<neurosys::layer> trainingImages = neurosys::MNIST::HandwritingImagesRead("t10k-images-idx3-ubyte");
+		std::vector<neurosys::input> trainingImages = neurosys::MNIST::HandwritingImagesRead("t10k-images-idx3-ubyte");
 		//std::vector<neurosys::layer> trainingImages = neurosys::MNIST::HandwritingImagesRead("train-images-idx3-ubyte");
 		std::cout << "done.\n";
 
@@ -24,11 +24,12 @@ int main(int argc, char** argv)
 		std::cout << "done.\n";
 
 		// construct our NN... single 16 node hidden layers, output is 10 neurons, one for each possible digit.
-		neurosys::network net({
+		/*neurosys::network net({
 			trainingImages.front(),
 			neurosys::layer(16, neurosys::activation::fastSigmoid),
 			neurosys::layer({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }, neurosys::activation::fastSigmoid)
-			});
+			});*/
+		neurosys::network net(trainingImages.front(), { neurosys::layer(16, neurosys::activation::sigmoid) }, neurosys::output(10, neurosys::activation::sigmoid, 1.0));
 
 		// set to randoms...
 		net.reset();

@@ -118,6 +118,7 @@
     <ClCompile Include="..\..\test\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\neurosys.hpp" />
     <ClInclude Include="..\..\test\catch.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -14,7 +14,7 @@ namespace neurosys
 		// load in the images into individual layers...
 		// http://yann.lecun.com/exdb/mnist/
 
-		typedef std::vector<neurosys::layer> Images;
+		typedef std::vector<neurosys::input> Images;
 
 		static int32_t readint32_t(std::ifstream& file, std::streampos pos)
 		{
@@ -75,10 +75,10 @@ namespace neurosys
 			file.read(reinterpret_cast<char *>(&pixels.front()), pixels.size());
 
 			// convert to the neurosys layer type...
-			Images result(count, neurosys::layer(imagePixelCount, neurosys::activation::fastSigmoid));
+			Images result(count, neurosys::input(imagePixelCount));
 			for (int n = 0; n < count; ++n)
 				for (int nn = 0; nn < imagePixelCount; ++nn)
-					result[n].neurons_[nn] = static_cast<double>(pixels[n*imagePixelCount + nn]) / 255.0;
+					result[n].neuron(nn) = static_cast<double>(pixels[n*imagePixelCount + nn]) / 255.0;
 			
 			return result;
 		}
