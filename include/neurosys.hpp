@@ -97,6 +97,8 @@ namespace neurosys
 		
 		void bias(double b) { bias_ = b; }
 		void activation(const activation::activation& a) { activation_ = a; }
+		
+		unsigned int size() const { return weights_.m(); }
 
 	protected:
 		matrix weights_;
@@ -139,28 +141,24 @@ namespace neurosys
 		network(const input& i, const std::vector<layer>& hidden, const output& o)
 		{
 			if (hidden.empty())
-				layers_ = { layer(matrix(i.weights().size(), o.weights().size()), i.activation(), i.bias()), o };
-			else
+               layers_ = { i, layer(matrix(i.size(), o.size()), o.activation(), o.bias()) };
+            else
 			{
 				layers_.reserve(hidden.size() + 2);
-				layers_.push_back(layer(matrix(i.weights().size(), hidden.front().weights().size()), hidden.front().activation(), hidden.front().bias()));
-				for (unsigned int h = 0; h < (hidden.size() - 1); ++h)
-					layers_.push_back(layer(matrix(hidden[h].weights().size(), hidden[h + 1].weights().size()), hidden[h].activation(), hidden[h].bias()));
-				layers_.push_back(layer(matrix(hidden.back().weights().size(), o.weights().size()), hidden.back().activation(), hidden.back().bias()));
-				layers_.push_back(o);
+                
+                layers_.push_back(i);
+                for (unsigned int h = 0; h < (hidden.size()); ++h)
+                    layers_.push_back(layer(matrix(layers_.back().size(), hidden[h].size()), hidden[h].activation(), hidden[h].bias()));
+                
+                layers_.push_back(layer(matrix(layers_.back().size(), o.size()), o.activation(), o.bias()));
 			}
 		}
 
 		const layer& operator[](unsigned int l) const { return layers_[l]; }
 		layer& operator[](unsigned int l) { return layers_[l]; }
+		
+		// layer count...
 		unsigned int size() const { return static_cast<unsigned int>(layers_.size()); }
-
-		// set a weight
-		
-		
-		// set the weights for a given i neuron (all the j's)
-
-		// set the weights for a given j neuron (everything that contributes to j from previous layer)
 
 		void reset()
 		{
@@ -174,7 +172,6 @@ namespace neurosys
 				layers_[l].bias(dist(eng));
 			}
 		}
-
 		
 	private:
 		std::vector<layer> layers_;
@@ -231,32 +228,32 @@ namespace neurosys
 		}
 
 		// a = sigma(z)
-		neurons a(const neurons& neu, activation::activationFn f)
+		neurons a(const neurons& ns, activation::activationFn f)
 		{
-			neurons result = neu;
+			neurons result = ns;
 			for (unsigned int i = 0; i < result.size(); ++i)
-				result[i] = f(neu[i]);
+				result[i] = f(ns[i]);
 			return result;
 		}
 
-		// z = [a(l) * w(l+1) + b(l+1)]
-		neurons z(const neurons& neu, const layer& l)
+		// z = [a(l) * w(l+1) + b(l+1) l)
+		neurons z(const neurons& ns, const layer& l)
 		{
-			return neurons(add(multiply(l.weights(), neu), l.bias()).values());
+			return neurons(add(multiply(l.weights(), ns), l.bias()).values());
 		}
 
 		// a single feed forward observation...
-		output observation(const network& net, const input& input)
-		{
-			assert(input.weights().m() == 1);
-			assert(input.weights().size() == net[0].weights().n());
+		//output observation(const network& net, const input& input)
+		//{
+		//	assert(input.weights().m() == 1);
+		//	assert(input.weights().size() == net[0].weights().n());
 
-			neurons neu = input.weights();
-			for (unsigned int l = 0; l < (net.size()-1); ++l)
-				neu = a(z(neu, net[l]), activation::Fn[net[l + 1].activation()]);
+			//neurons neu = input.weights();
+			//for (unsigned int l = 0; l < (net.size()-1); ++l)
+			//	neu = a(z(neu, net[l]), activation::Fn[net[l + 1].activation()]);
 
-			return neu;
-		}
+			//return neu;
+		//}
 		
 		//matrix cost(network& net, const matrix& output)
 		//{

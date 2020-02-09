@@ -434,8 +434,88 @@ TEST_CASE("matrix addMatrix", "[matrix]")
 	
 }
 
+// layer...
+//TEST_CASE("layer construct", "[layer]")
+//{
+//}
 
-TEST_CASE("network anotsorandomwalk", "[network]")
+
+TEST_CASE("network construct", "[network][construct][working]")
+{
+    {
+        neurosys::network net(neurosys::input(1), {}, neurosys::output(1, neurosys::activation::linear, 1.0));
+        CHECK(net.size() == 2);
+        CHECK(net[0].size() == 1);
+        CHECK(net[0].weights().size() == 1); 
+        CHECK(net[1].size() == 1);
+        CHECK(net[1].weights().size() == 1);
+    }
+    {
+        neurosys::network net(neurosys::input(2), {}, neurosys::output(2, neurosys::activation::linear, 1.0));
+        CHECK(net.size() == 2);
+        CHECK(net[0].size() == 2);
+        CHECK(net[0].weights().size() == 2);        
+        CHECK(net[1].size() == 2);        
+        CHECK(net[1].weights().size() == 4); 
+    }
+    {
+        neurosys::network net(neurosys::input(3), {}, neurosys::output(3, neurosys::activation::linear, 1.0));
+        CHECK(net.size() == 2);
+        CHECK(net[0].size() == 3);
+        CHECK(net[0].weights().size() == 3);        
+        CHECK(net[1].size() == 3);        
+        CHECK(net[1].weights().size() == 9); 
+    }
+    {
+        neurosys::network net(neurosys::input(3), {}, neurosys::output(1, neurosys::activation::linear, 1.0));
+        CHECK(net.size() == 2);
+        CHECK(net[0].size() == 3);
+        CHECK(net[0].weights().size() == 3);        
+        CHECK(net[1].size() == 1);        
+        CHECK(net[1].weights().size() == 3);        
+    }
+    {
+        neurosys::network net(neurosys::input(1), {}, neurosys::output(3, neurosys::activation::linear, 1.0));
+        CHECK(net.size() == 2);
+        CHECK(net[0].size() == 1);
+        CHECK(net[0].weights().size() == 1);        
+        CHECK(net[1].size() == 3);        
+        CHECK(net[1].weights().size() == 3);        
+    }
+    {
+        neurosys::network net(neurosys::input(1), { neurosys::layer(1, neurosys::activation::linear) }, neurosys::output(1, neurosys::activation::linear, 1.0));
+        CHECK(net.size() == 3);        
+        CHECK(net[0].size() == 1);
+        CHECK(net[0].weights().size() == 1);        
+        CHECK(net[1].size() == 1);        
+        CHECK(net[1].weights().size() == 1);        
+        CHECK(net[2].size() == 1);        
+        CHECK(net[2].weights().size() == 1);        
+    }
+    {
+        neurosys::network net(neurosys::input(2), { neurosys::layer(2, neurosys::activation::linear) }, neurosys::output(2, neurosys::activation::linear, 1.0));
+        CHECK(net.size() == 3);        
+        CHECK(net[0].size() == 2);
+        CHECK(net[0].weights().size() == 4);        
+        CHECK(net[1].size() == 2);        
+        CHECK(net[1].weights().size() == 4);        
+        CHECK(net[2].size() == 2);        
+        CHECK(net[2].weights().size() == 4);        
+    }
+    {
+        neurosys::network net(neurosys::input(3), { neurosys::layer(3, neurosys::activation::linear) }, neurosys::output(3, neurosys::activation::linear, 1.0));
+        CHECK(net.size() == 3);        
+        CHECK(net[0].size() == 3);
+        CHECK(net[0].weights().size() == 9);        
+        CHECK(net[1].size() == 3);        
+        CHECK(net[1].weights().size() == 9);        
+        CHECK(net[2].size() == 3);        
+        CHECK(net[2].weights().size() == 9);        
+    }
+}
+
+
+TEST_CASE("network anotsorandomwalk", "[network][anotsorandomwalk]")
 {
 	// https://www.anotsorandomwalk.com/backpropagation-example-with-numbers-step-by-step/
 
@@ -445,18 +525,24 @@ TEST_CASE("network anotsorandomwalk", "[network]")
 		  neurosys::output(2, neurosys::activation::sigmoid, 0.5) 
 	);
 
-    net[0].weights().value(0, 0) = 0.1;
-    net[0].weights().value(0, 1) = 0.2;
-    net[0].weights().value(1, 0) = 0.3;
-    net[0].weights().value(1, 1) = 0.4;
-    net[0].weights().value(2, 0) = 0.5;
-    net[0].weights().value(2, 1) = 0.6;
-    net[1].weights().value(0, 0) = 0.7;
-    net[1].weights().value(0, 1) = 0.8;
-    net[1].weights().value(1, 0) = 0.9;
-    net[1].weights().value(1, 1) = 0.1;
+    net[1].weights().value(0, 0) = 0.1;
+    net[1].weights().value(0, 1) = 0.2;
+    net[1].weights().value(1, 0) = 0.3;
+    net[1].weights().value(1, 1) = 0.4;
+    net[1].weights().value(2, 0) = 0.5;
+    net[1].weights().value(2, 1) = 0.6;
+    net[2].weights().value(0, 0) = 0.7;
+    net[2].weights().value(0, 1) = 0.8;
+    net[2].weights().value(1, 0) = 0.9;
+    net[2].weights().value(1, 1) = 0.1;
     
-    neurosys::output result = neurosys::feedForward::observation(net, neurosys::input({ 1.0, 4.0, 5.0 }));
+    neurosys::neurons result = neurosys::feedForward::z(neurosys::neurons({ 1.0, 4.0, 5.0 }), net[1]);
+    
+    
+    //neurosys::output result = neurosys::feedForward::observation(net, neurosys::input({ 1.0, 4.0, 5.0 }));
+    
+    //CHECK(result[0] == 9866);
+    //CHECK(result[1] == 9950);
     
     
     
