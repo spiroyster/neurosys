@@ -90,7 +90,7 @@ namespace neurosys
 		}
 
 		const matrix& weights() const { return weights_; }
-		//matrix& weights() { return weights_; }
+		matrix& weights() { return weights_; }
 
 		double bias() const { return bias_; }
 		const activation::activation& activation() const { return activation_; }
@@ -157,6 +157,7 @@ namespace neurosys
 
 		// set a weight
 		
+		
 		// set the weights for a given i neuron (all the j's)
 
 		// set the weights for a given j neuron (everything that contributes to j from previous layer)
@@ -170,7 +171,7 @@ namespace neurosys
 			{
 				for (unsigned int n = 0; n < layers_[l].weights().size(); ++n)
 					layers_[l].weights()[n] = dist(eng);
-				layers_[l].setBias(dist(eng));
+				layers_[l].bias(dist(eng));
 			}
 		}
 
@@ -191,18 +192,21 @@ namespace neurosys
 			return result;
 		}
 
-		// multiply
+		// multiplyz
 		matrix multiply(const matrix& a, const matrix& b)
 		{
-			assert(a.m() == b.n());
 			assert(a.n() == b.m());
-
-			matrix result(a.n(), b.m());
-			for (unsigned int i = 0; i < a.n(); ++i)
-				for (unsigned int j = 0; j < b.m(); ++j)
-					for (unsigned int k = 0; k < a.m(); ++k)
-						result[(i * result.n()) + result.m()] += a[(i * a.n()) + k] * a[(k * b.n()) + j];
-
+			matrix result(a.m(), b.n());
+     
+            for (unsigned int i = 0; i < a.m(); ++i)
+                for (unsigned int j = 0; j < b.n(); ++j)
+                {
+                    double& resultValue = result.value(i, j);
+                    for (unsigned int k = 0; k < b.m(); ++k)
+                        resultValue += a.value(i, k) * b.value(k, j); 
+                    
+                }
+                        
 			return result;
 		}
 
@@ -242,17 +246,17 @@ namespace neurosys
 		}
 
 		// a single feed forward observation...
-		//output observation(const network& net, const input& input)
-		//{
-		//	/*assert(input.m() == 1);
-		//	assert(input.size() == net[0].weights().n());
+		output observation(const network& net, const input& input)
+		{
+			assert(input.weights().m() == 1);
+			assert(input.weights().size() == net[0].weights().n());
 
-		//	neurons neu = input;
-		//	for (unsigned int l = 0; l < (net.size()-1); ++l)
-		//		neu = a(z(neu, net[l]), activation::Fn[net[l + 1].activation()]);
+			neurons neu = input.weights();
+			for (unsigned int l = 0; l < (net.size()-1); ++l)
+				neu = a(z(neu, net[l]), activation::Fn[net[l + 1].activation()]);
 
-		//	return neu;*/
-		//}
+			return neu;
+		}
 		
 		//matrix cost(network& net, const matrix& output)
 		//{

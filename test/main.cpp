@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 
-#include "..\include\neurosys.hpp"
+#include "../include/neurosys.hpp"
 
 //TEST_CASE("activation sigmoid", "[activation]")
 //TEST_CASE("activation sigmoidPrime", "[activation]")
@@ -331,16 +331,8 @@ TEST_CASE("matrix multiply", "[matrix]")
 		neurosys::matrix n({ {1.0, 2.0, 3.0 } }, 1);
 		neurosys::matrix result = neurosys::feedForward::multiply(m, n);
 
-		CHECK(result.size() == 9);
-		CHECK(result.value(0, 0) == 1.0);
-		CHECK(result.value(0, 1) == 1.0);
-		CHECK(result.value(0, 2) == 1.0);
-		CHECK(result.value(1, 0) == 1.0);
-		CHECK(result.value(1, 1) == 1.0);
-		CHECK(result.value(1, 2) == 1.0);
-		CHECK(result.value(2, 0) == 1.0);
-		CHECK(result.value(2, 1) == 1.0);
-		CHECK(result.value(2, 2) == 1.0);
+		CHECK(result.size() == 1);
+		CHECK(result.value(0, 0) == 14.0);
 	}
 	{
 		neurosys::matrix m({ {1.0, 2.0, 3.0 } }, 1);
@@ -349,14 +341,14 @@ TEST_CASE("matrix multiply", "[matrix]")
 
 		CHECK(result.size() == 9);
 		CHECK(result.value(0, 0) == 1.0);
-		CHECK(result.value(0, 1) == 1.0);
-		CHECK(result.value(0, 2) == 1.0);
-		CHECK(result.value(1, 0) == 1.0);
-		CHECK(result.value(1, 1) == 1.0);
-		CHECK(result.value(1, 2) == 1.0);
-		CHECK(result.value(2, 0) == 1.0);
-		CHECK(result.value(2, 1) == 1.0);
-		CHECK(result.value(2, 2) == 1.0);
+        CHECK(result.value(0, 1) == 2.0);
+        CHECK(result.value(0, 2) == 3.0);
+        CHECK(result.value(1, 0) == 2.0);
+        CHECK(result.value(1, 1) == 4.0);
+        CHECK(result.value(1, 2) == 6.0);
+        CHECK(result.value(2, 0) == 3.0);
+        CHECK(result.value(2, 1) == 6.0);
+        CHECK(result.value(2, 2) == 9.0);
 	}
 	{
 		neurosys::matrix m({ {1.0, 2.0, 3.0, 4.0 } }, 2);
@@ -443,15 +435,6 @@ TEST_CASE("matrix addMatrix", "[matrix]")
 }
 
 
-
-
-//
-//
-//TEST_CASE("layer empty", "[layer]")
-//{
-//
-//}
-//
 TEST_CASE("network anotsorandomwalk", "[network]")
 {
 	// https://www.anotsorandomwalk.com/backpropagation-example-with-numbers-step-by-step/
@@ -462,71 +445,27 @@ TEST_CASE("network anotsorandomwalk", "[network]")
 		  neurosys::output(2, neurosys::activation::sigmoid, 0.5) 
 	);
 
-	//net[0].weights() = neurosys::matrix({ 0.1, 0.2, 0.3, 0.4, 0.5, 0.6 }, 3);
-	//net[1].weights() = neurosys::matrix({ 0.7, 0.8, 0.9, 0.1 }, 2);
-
-
-	net[0].weight(0, 0) = 0.1;
-
-
-
-
+    net[0].weights().value(0, 0) = 0.1;
+    net[0].weights().value(0, 1) = 0.2;
+    net[0].weights().value(1, 0) = 0.3;
+    net[0].weights().value(1, 1) = 0.4;
+    net[0].weights().value(2, 0) = 0.5;
+    net[0].weights().value(2, 1) = 0.6;
+    net[1].weights().value(0, 0) = 0.7;
+    net[1].weights().value(0, 1) = 0.8;
+    net[1].weights().value(1, 0) = 0.9;
+    net[1].weights().value(1, 1) = 0.1;
+    
+    neurosys::output result = neurosys::feedForward::observation(net, neurosys::input({ 1.0, 4.0, 5.0 }));
+    
+    
+    
+    
+    //neurosys::layer({ 1.0, 4.0, 5.0 }, neurosys::activation::linear),
+    //		neurosys::layer({ 0.9866, 0.9950 }, neurosys::activation::sigmoid, 0.5),
+    //		neurosys::layer({ 0.8896, 0.8004 }, neurosys::activation::sigmoid, 0.5)
+    
 }
-
-
-
-
-
-
-
-
-//TEST_CASE("matrix column", "[matrix]")
-//{
-//	// column vector...
-//	neurosys::column m(0);
-//	CHECK(m.size() == 0);
-//	CHECK(m.values().size() == 0);
-//	CHECK(!m.isColumnVector());
-//	CHECK(!m.isRowVector());
-//
-//	neurosys::column m(1);
-//	CHECK(m.size() == 1);
-//	CHECK(m.values().size() == 1);
-//	CHECK(m.value(0, 0) == 0);
-//	CHECK(m.isColumnVector());
-//	CHECK(!m.isRowVector());
-//
-//	neurosys::column m({ 42.0 });
-//	CHECK(m.size() == 1);
-//	CHECK(m.values().size() == 1);
-//	CHECK(m.value(0, 0) == 42.0);
-//	CHECK(m.isColumnVector());
-//	CHECK(!m.isRowVector());
-//
-//	neurosys::column m(2);
-//	CHECK(m.size() == 2);
-//	CHECK(m.values().size() == 2);
-//	CHECK(m.value(1, 0) == 0);
-//	CHECK(m.value(0, 1) == 0);
-//	CHECK(m.isColumnVector());
-//	CHECK(!m.isRowVector());
-//
-//	neurosys::column m({ 42.0, 56.0 });
-//	CHECK(m.size() == 2);
-//	CHECK(m.values().size() == 2);
-//	CHECK(m.isColumnVector());
-//	CHECK(!m.isRowVector());
-//
-//}
-
-// matrix multiplication
-
-
-	
-	
-	
-
-
 
 //namespace
 //{

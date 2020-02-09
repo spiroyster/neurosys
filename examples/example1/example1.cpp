@@ -1,4 +1,4 @@
-#include "..\..\include\neurosys.hpp"
+#include "../../include/neurosys.hpp"
 #include "MNIST.hpp"
 
 #include <iostream>
@@ -15,7 +15,7 @@ int main(int argc, char** argv)
 	{
 		std::cout << "Loading data (t10k-images-idx3-ubyte)...";
 		std::vector<neurosys::input> trainingImages = neurosys::MNIST::HandwritingImagesRead("t10k-images-idx3-ubyte");
-		//std::vector<neurosys::layer> trainingImages = neurosys::MNIST::HandwritingImagesRead("train-images-idx3-ubyte");
+		//std::vector<neurosys::input> trainingImages = neurosys::MNIST::HandwritingImagesRead("train-images-idx3-ubyte");
 		std::cout << "done.\n";
 
 		std::cout << "Loading data (t10k-labels-idx1-ubyte)...";
@@ -35,28 +35,28 @@ int main(int argc, char** argv)
 		net.reset();
 
 		// put the values through an see what we get!
-		unsigned int correct = 0;
-		for (int i = 0; i < trainingImages.size(); ++i)
-		{
-			std::cout << "forward " << i << " |";
+		//unsigned int correct = 0;
+		//for (int i = 0; i < trainingImages.size(); ++i)
+		//{
+			//std::cout << "forward " << i << " |";
 
 			// put through network...
-			neurosys::layer output = neurosys::feedForward::observation(net, trainingImages[i]);
+			//neurosys::layer output = neurosys::feedForward::observation(net, trainingImages[i]);
 
 			// find out which digit...(this is the index of the highest value neruon in the output)
-			std::size_t value = output.largest();
+			//std::size_t value = output.largest();
 
-			std::cout << "  expected: " << static_cast<unsigned int>(trainingLabels[i]) << " actual : " << value << "  (neuron:" << output.neurons_[value] << ")\n";
+			//std::cout << "  expected: " << static_cast<unsigned int>(trainingLabels[i]) << " actual : " << value << "  (neuron:" << output.neurons_[value] << ")\n";
 
 			// compare...
-			correct += value == trainingLabels[i] ? 1 : 0;
-		}
+			//correct += value == trainingLabels[i] ? 1 : 0;
+		//}
 
 		// caluclate the percentage correct...
-		double percent = static_cast<double>(correct) / static_cast<double>(trainingImages.size()) * 100.0;
+		//double percent = static_cast<double>(correct) / static_cast<double>(trainingImages.size()) * 100.0;
 
-		std::cout << "==================\n";
-		std::cout << " " << correct << " correct observations (" << percent << "%).\n";
+		//std::cout << "==================\n";
+		//std::cout << " " << correct << " correct observations (" << percent << "%).\n";
 
 		return 0;
 	}

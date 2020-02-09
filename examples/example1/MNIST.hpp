@@ -1,11 +1,12 @@
 #ifndef NEUROSYS_MNIST_HPP
 #define NEUROSYS_MNIST_HPP
 
-#include "..\..\include\neurosys.hpp"
+#include "../../include/neurosys.hpp"
 
 #include <array>
 #include <fstream>
 #include <filesystem>
+#include <stdexcept>
 
 namespace neurosys
 {
@@ -32,12 +33,12 @@ namespace neurosys
 		{
 			std::ifstream file(filename.c_str(), std::ios::binary | std::ios::ate);
 			if (!file)
-				throw std::exception("Unable to read labels file.");
+				throw std::runtime_error("Unable to read labels file.");
 
 			// Check magic...
 			int32_t magic = readint32_t(file, 0);
 			if (magic != 2049)
-				throw std::exception("Not MNIST labels file.");
+				throw std::runtime_error("Not MNIST labels file.");
 
 			// Read number of items...
 			int32_t count = readint32_t(file, sizeof(int32_t));
@@ -54,12 +55,12 @@ namespace neurosys
 		{
 			std::ifstream file(filename.c_str(), std::ios::binary | std::ios::ate);
 			if (!file)
-				throw std::exception("Unable to read images file.");
+				throw std::runtime_error("Unable to read images file.");
 
 			// Check magic...
 			int32_t magic = readint32_t(file, 0);
 			if (magic != 2051)
-				throw std::exception("Not MNIST images file.");
+				throw std::runtime_error("Not MNIST images file.");
 
 			// Read number of items...
 			int32_t count = readint32_t(file, sizeof(int32_t));
