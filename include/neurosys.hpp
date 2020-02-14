@@ -5,6 +5,7 @@
 #include <functional>
 #include <assert.h>
 #include <random>
+#include <numeric>
 
 
 namespace neurosys
@@ -27,9 +28,33 @@ namespace neurosys
 
 		std::vector<activationFn> FnPrime
 		{
-			[](const double& x) { return (1.0 - x); },
+			[](const double& x) { return x * (1.0 - x); },
 			[](const double& x) { return 1.0; }
 		};
+	}
+
+	namespace cost
+	{
+		typedef std::function<double(const double& output, const double& expected)> costFn;
+
+		enum cost
+		{
+			squaredError,
+			difference
+		};
+
+		std::vector<costFn> Fn
+		{
+			[](const double& output, const double& expected) { return 0.5 * ((output - expected) * (output - expected)); },
+			[](const double& output, const double& expected) { return output - expected; }
+		};
+
+		std::vector<costFn> FnPrime
+		{
+			[](const double& output, const double& expected) { return (output - expected); },
+			[](const double& output, const double& expected) { return 1.0; }
+		};
+
 	}
 
 
@@ -70,6 +95,105 @@ namespace neurosys
 
 	};
 
+	namespace maths
+	{
+		// transpose
+		matrix transpose(const matrix& m)
+		{
+			matrix result(m.n(), m.m());
+			for (unsigned int i = 0; i < m.n(); ++i)
+				for (unsigned int j = 0; j < m.m(); ++j)
+					result.value(i, j) = m.value(j, i);
+			return result;
+		}
+
+		// multiplyz
+		matrix product(const matrix& a, const matrix& b)
+		{
+			assert(a.n() == b.m());
+			matrix result(a.m(), b.n());
+
+			for (unsigned int i = 0; i < a.m(); ++i)
+				for (unsigned int j = 0; j < b.n(); ++j)
+				{
+					double& resultValue = result.value(i, j);
+					for (unsigned int k = 0; k < b.m(); ++k)
+						resultValue += a.value(i, k) * b.value(k, j);
+
+				}
+
+			return result;
+		}
+
+		matrix scale(const matrix& m, double scalar)
+		{
+			matrix result = m;
+			for (unsigned int r = 0; r < result.size(); ++r)
+				result[r] *= scalar;
+			return result;
+		}
+
+
+		matrix hadamard(const matrix& a, const matrix& b)
+		{
+			assert(a.m() == b.m());
+			assert(a.n() == b.n());
+
+			matrix result = a;
+			for (unsigned int r = 0; r < result.size(); ++r)
+				result[r] *= b[r];
+			return result;
+		}
+
+		// add
+		matrix add(const matrix& a, const matrix& b)
+		{
+			assert(a.m() == b.m());
+			assert(a.n() == b.n());
+
+			matrix result = a;
+			for (unsigned int i = 0; i < result.size(); ++i)
+				result[i] += b[i];
+			return result;
+		}
+
+		matrix add(const matrix& m, double v)
+		{
+			matrix result = m;
+			for (unsigned int i = 0; i < result.size(); ++i)
+				result[i] += v;
+			return result;
+		}
+
+		matrix subtract(const matrix& a, const matrix& b)
+		{
+			assert(a.m() == b.m());
+			assert(a.n() == b.n());
+
+			matrix result = a;
+			for (unsigned int i = 0; i < result.size(); ++i)
+				result[i] -= b[i];
+			return result;
+		}
+
+		double sum(const matrix& m)
+		{
+			return std::accumulate(m.values().begin(), m.values().end(), 0.0);
+		}
+
+		unsigned int largest(const matrix& m)
+		{
+			return static_cast<unsigned int>(std::distance(m.values().begin(), std::max_element(m.values().begin(), m.values().end())));
+		}
+
+		double average(const matrix& m)
+		{
+			return sum(m) / static_cast<float>(m.size());
+		}
+	}
+
+	
+
 
 	// layer (weight matrix), bias...
 	class layer
@@ -100,6 +224,10 @@ namespace neurosys
 		
 		unsigned int size() const { return weights_.m(); }
 
+		const double& weight(unsigned int i, unsigned int j) const { return weights_.value(j, i); };
+		double& weight(unsigned int i, unsigned int j) { return weights_.value(j, i); };
+
+
 	protected:
 		matrix weights_;
 		double bias_;
@@ -129,6 +257,13 @@ namespace neurosys
 			: layer(neuronCount, a, bias)
 		{
 		}
+
+		output(const neurons& neus)
+			: layer(neus, activation::linear, 1.0)
+		{
+		}
+
+		const double& neuron(unsigned int n) const { return weights_[n]; }
 	};
 
 	
@@ -141,16 +276,16 @@ namespace neurosys
 		network(const input& i, const std::vector<layer>& hidden, const output& o)
 		{
 			if (hidden.empty())
-               layers_ = { i, layer(matrix(i.size(), o.size()), o.activation(), o.bias()) };
+               layers_ = { i, layer(matrix(o.size(), i.size()), o.activation(), o.bias()) };
             else
 			{
 				layers_.reserve(hidden.size() + 2);
                 
                 layers_.push_back(i);
-                for (unsigned int h = 0; h < (hidden.size()); ++h)
-                    layers_.push_back(layer(matrix(layers_.back().size(), hidden[h].size()), hidden[h].activation(), hidden[h].bias()));
-                
-                layers_.push_back(layer(matrix(layers_.back().size(), o.size()), o.activation(), o.bias()));
+				for (unsigned int h = 0; h < (hidden.size()); ++h)
+					layers_.push_back(layer(matrix(hidden[h].size(), layers_.back().size()), hidden[h].activation(), hidden[h].bias()));
+				    
+				layers_.push_back(layer(matrix(o.size(), layers_.back().size()), o.activation(), o.bias()));
 			}
 		}
 
@@ -179,53 +314,7 @@ namespace neurosys
 	
 	namespace feedForward
 	{
-		// transpose
-		matrix transpose(const matrix& m)
-		{
-			matrix result(m.n(), m.m());
-			for (unsigned int i = 0; i < m.n(); ++i)
-				for (unsigned int j = 0; j < m.m(); ++j)
-					result.value(i, j) = m.value(j, i);
-			return result;
-		}
-
-		// multiplyz
-		matrix multiply(const matrix& a, const matrix& b)
-		{
-			assert(a.n() == b.m());
-			matrix result(a.m(), b.n());
-     
-            for (unsigned int i = 0; i < a.m(); ++i)
-                for (unsigned int j = 0; j < b.n(); ++j)
-                {
-                    double& resultValue = result.value(i, j);
-                    for (unsigned int k = 0; k < b.m(); ++k)
-                        resultValue += a.value(i, k) * b.value(k, j); 
-                    
-                }
-                        
-			return result;
-		}
-
-		// add
-		matrix add(const matrix& a, const matrix& b)
-		{
-			assert(a.m() == b.m());
-			assert(a.n() == b.n());
-
-			matrix result = a;
-			for (unsigned int i = 0; i < result.size(); ++i)
-				result[i] += b[i];
-			return result;
-		}
-
-		matrix add(const matrix& m, double v)
-		{
-			matrix result = m;
-			for (unsigned int i = 0; i < result.size(); ++i)
-				result[i] += v;
-			return result;
-		}
+		
 
 		// a = sigma(z)
 		neurons a(const neurons& ns, activation::activationFn f)
@@ -239,298 +328,113 @@ namespace neurosys
 		// z = [a(l) * w(l+1) + b(l+1) l)
 		neurons z(const neurons& ns, const layer& l)
 		{
-			return neurons(add(multiply(l.weights(), ns), l.bias()).values());
+			return neurons(maths::add(maths::product(l.weights(), ns), l.bias()).values());
 		}
 
-		// a single feed forward observation...
-		//output observation(const network& net, const input& input)
-		//{
-		//	assert(input.weights().m() == 1);
-		//	assert(input.weights().size() == net[0].weights().n());
+		neurons traverse(const layer& l, const neurons& i)
+		{
+			assert(i.n() == 1);
+			assert(i.m() == l.weights().n());
 
-			//neurons neu = input.weights();
-			//for (unsigned int l = 0; l < (net.size()-1); ++l)
-			//	neu = a(z(neu, net[l]), activation::Fn[net[l + 1].activation()]);
+			return a(z(i.values(), l), activation::Fn[l.activation()]);
+		}
 
-			//return neu;
-		//}
+		std::vector<neurons> observation(const network& net, const input& i)
+		{
+			std::vector<neurons> result;
+			result.reserve(net.size());
+
+			result.push_back(i.weights().values());
+			for (unsigned int l = 1; l < net.size(); ++l)
+				result.push_back(traverse(net[l], result.back()));
+
+			return result;
+		}
 		
-		//matrix cost(network& net, const matrix& output)
-		//{
+		neurons cost(const output& result, const output& expected, cost::costFn& C)
+		{
+			matrix ret = result.weights();
+			for (unsigned int r = 0; r < result.size(); ++r)
+				ret[r] = C(result.weights()[r], expected.weights()[r]);
+			return neurons(ret.values());
+		}
 
-		//}
+		// cost is (o - t).
+		network backPropagation(const network& net, const input& i, const output& expected, const cost::cost& C, const double& learningRate)
+		{
+			assert(net.size() >= 2);
 
-		//void backPropagate(network& net, const matrix& cost)
-		//{
-		//	//assert(input)
-		//	
-		//	// calculate error for output layer...
+			network result = net;
 
-		//	// calculate the error for each subsequent layer...
-		//	
+			// perform the forward propagation...
+			std::vector<neurons> ff = observation(net, i);
+			
+			// Calculate the output error... this is the output vs expected.
+			matrix dO = cost(ff.back(), expected, cost::FnPrime[C]);
+
+			// Calculate dZ (delta sigmoid)
+			matrix dZ = a(neurons(dO.values()), activation::FnPrime[net[net.size() - 1].activation()]);
+
+			// Calculate the delta matrix.. (dO * dZ)
+			matrix dZdO = maths::hadamard(dO, dZ);
+			
+			for (unsigned int l = net.size() - 1; l > 0; --l)
+			{
+				// calculate the delta weight matrix... (dZ(l) * h(l-1))
+				matrix dW = maths::product(dZdO, maths::transpose(ff[l - 1]));
+
+				// update the weights... wn = wn - learnRate ( dW )
+				result[l].weights() = maths::subtract(net[l].weights(), maths::scale(dW, learningRate));
+
+				// update the bias... sum of dZ (or just dZ)
+				result[l].bias(net[l].bias() - (learningRate * maths::sum(dZdO)));
+
+				// calculate the next delta... dE(l) -> dE(l-1)
+				dO = maths::product(maths::transpose(net[l].weights()), dZdO);
+
+				// calculate the new deltaZ... dZ(l) -> dZ(l-1)
+				dZ = a(neurons(dO.values()), activation::FnPrime[net[l-1].activation()]);
+
+				dZdO = maths::hadamard(dO, dZ);
+			}
+
+			return result;
+		}
+
+		typedef std::function<neurons(unsigned int n, const output& o)> expectedFn;
+
+		network train(const network& net, const std::vector<input>& i, const std::vector<output>& o, const cost::cost& C, double learningRate, unsigned int start, unsigned int end)
+		{
 
 
-		//}
+			for (unsigned int n = start; n < end; ++n)
+			{
 
-		
+
+			}
+
+			// back propagate...
+
+		}
+
+		network train(const network& net, const std::vector<input>& i, const std::vector<output>& o, const cost::cost& C, double learningRate, unsigned int batchSize)
+		{
+			network result = net;
+			for (unsigned int n = 0; n < i.size(); n += batchSize)
+			{
+				result = train(result, i, o, C, learningRate, n )
+			}
+				
+		}
+
+		network train(const network& net, const std::vector<input>& i, const std::vector<output>& o, const cost::cost& C, double learningRate)
+		{
+			return train(net, i, o, C, learningRate, i.size());
+		}
+
 	}
 
 }
 
-
-//#include <fstream>
-//#include <vector>
-//#include <list>
-//#include <functional>
-//#include <random>
-//#include <numeric>
-//#include <assert.h>
-//
-//namespace neurosys
-//{
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//	typedef double neuron;
-//
-//	namespace activation
-//	{
-//		typedef std::function<neuron(const neuron& x)> fn;
-//
-//		static fn linear = [](const neuron& x) { return x; };
-//		static fn ReLU = [](const neuron& x) { return x > 0 ? x : 0; }; 
-//		static fn leakyReLU = [](const neuron& x) { return x > 0 ? x : 0.01 * x; };
-//		static fn fastSigmoid = [](const neuron& x) { return x / (1.0+abs(x)); };
-//		static fn sigmoid= [](const neuron& x) { return 1.0 / ( 1.0 + exp(-x)); };
-//	}
-//
-//	struct layer
-//	{
-//	public:
-//		layer(const std::vector<neuron>& neurons, activation::fn activation) : neurons_(neurons), activation_(activation), bias_(0) {}
-//		layer(const std::vector<neuron>& neurons, activation::fn activation, double bias) : neurons_(neurons), activation_(activation), bias_(bias) {}
-//		layer(unsigned int size, activation::fn activation) : neurons_(size, 0), activation_(activation), bias_(0) {}
-//		layer(unsigned int size, activation::fn activation, double bias) : neurons_(size, 0), activation_(activation), bias_(bias) {}
-//		
-//		layer& operator=(const layer& rhs)
-//		{
-//			neurons_ = rhs.neurons_;
-//			activation_ = rhs.activation_;
-//			bias_ = rhs.bias_;
-//			return *this;
-//		}
-//
-//		bool operator==(const layer& rhs) const
-//		{
-//			return neurons_ == rhs.neurons_ && bias_ == rhs.bias_; // also check activation functions are the same?
-//		}
-//		bool operator!=(const layer& rhs) const
-//		{
-//			return !(*this == rhs);
-//		}
-//
-//		std::size_t largest()
-//		{
-//			return std::distance(neurons_.begin(), std::max_element(neurons_.begin(), neurons_.end()));
-//		}
-//
-//		neuron sum()
-//		{
-//			return std::accumulate(neurons_.begin(), neurons_.end(), 0.0);
-//		}
-//
-//		layer squaredError(const layer& expected) const
-//		{
-//			// assert layers have same number of items...
-//			assert(neurons_.size() == expected.neurons_.size());
-//
-//			layer result = expected;
-//			for (unsigned int n = 0; n < neurons_.size(); ++n)
-//				result.neurons_[n] = (result.neurons_[n] - neurons_[n]) * (result.neurons_[n] - neurons_[n]);
-//			return result;
-//		}
-//
-//		double sumSquaredError(const layer& expected) const
-//		{
-//			layer result = squaredError(expected);
-//			return result.sum() / static_cast<double>(neurons_.size());
-//		}
-//
-//		std::vector<neuron> neurons_;
-//		activation::fn activation_;
-//		double bias_;
-//	};
-//
-//	struct network
-//	{
-//		network(const std::vector<layer>& layers) : layers_(layers)
-//		{
-//			assert(layers_.size() >= 2);
-//
-//			// construct the weight matrices...
-//			weights_.reserve(layers_.size() - 1);
-//			for (unsigned int l = 0; l < layers_.size() - 1; ++l)
-//				weights_.push_back(std::vector<neuron>(layers_[l].neurons_.size() * layers_[l+1].neurons_.size()));
-//		}
-//
-//		void reset()
-//		{
-//			std::default_random_engine rd;
-//			std::mt19937 eng(rd());
-//			std::uniform_real_distribution<double> dist(0.0, 1.0);
-//			for (unsigned int l = 0; l < layers_.size(); ++l)
-//			{
-//				for (unsigned int n = 0; n < layers_[l].neurons_.size(); ++n)
-//					layers_[l].neurons_[n] = dist(eng);
-//				layers_[l].bias_ = dist(eng);
-//			}
-//
-//			for (unsigned int w = 0; w < weights_.size(); ++w)
-//				for (unsigned int n = 0; n < weights_[w].size(); ++n)
-//					weights_[w][n] = dist(eng);
-//		}
-//
-//		// l1 = layer, l1n = layer1 neuron, l2n = layer2 neuron
-//		neuron& weight(unsigned int l1, unsigned int l1n, unsigned int l2n)
-//		{
-//			assert(l1 < layers_.size() - 1);
-//			assert(l1n < layers_[l1].neurons_.size());
-//			assert(l2n < layers_[l1 + 1].neurons_.size());
-//
-//			return weights_[l1][(layers_[l1].neurons_.size() * l2n) + l1n];
-//		}
-//
-//		// l1 = layer, l1n = layer1 neuron, l2n = layer2 neuron
-//		const neuron& weight(unsigned int l1, unsigned int l1n, unsigned int l2n) const
-//		{
-//			assert(l1 < layers_.size() - 1);
-//			assert(l1n < layers_[l1].neurons_.size());
-//			assert(l2n < layers_[l1 + 1].neurons_.size());
-//
-//			return weights_[l1][(layers_[l1].neurons_.size() * l2n) + l1n];
-//		}
-//
-//		// l1 = layer, l1n = layer1 neuron, l1weights = weights for l1 neuron
-//		void weights(unsigned int l1, unsigned int l1n, const std::vector<neuron>& l1nweights)
-//		{
-//			assert(l1 < layers_.size() - 1);
-//			assert(l1n < layers_[l1].neurons_.size());
-//			assert(l1nweights.size() == layers_[l1 + 1].neurons_.size());
-//
-//			std::size_t l1size = layers_[l1].neurons_.size();
-//			
-//			for (std::size_t n = 0; n < l1nweights.size(); ++n)
-//				weights_[l1][(n * l1size) + l1n] = l1nweights[n];
-//		}
-//
-//		// given a neuron, what are its weights to all neurons of the next layer...
-//		std::vector<neuron*> forwardWeights(unsigned int l1, unsigned int l1n)
-//		{
-//			// assert not last layer...
-//			assert(l1 != layers_.size());
-//			assert(l1n < layers_[l1].neurons_.size());
-//			
-//			std::size_t l1size = layers_[l1].neurons_.size();
-//			std::size_t l2size = layers_[l1 + 1].neurons_.size();
-//
-//			std::vector<neuron*> result(l2size);
-//			for (std::size_t n = 0; n < l2size; ++n)
-//				result[n] = &weights_[l1][(l1size * n) + l1n] ;
-//			return result;
-//		}
-//
-//		// given a neuron, what are all the weights from the previous layer to the neuron...
-//		std::vector<neuron*> backWeights(unsigned int l2, unsigned int l2n)
-//		{
-//			// assert not first layer...
-//			assert(l2 > 0);
-//			assert(l2n < layers_[l2-1].neurons_.size());
-//
-//			std::size_t l1size = layers_[l2 - 1].neurons_.size();
-//			std::vector<neuron*> result(l1size);
-//			
-//			for (std::size_t n = 0; n < l1size; ++n)
-//				result[n] = &weights_[l2 - 1][(l1size * l2n) + n];
-//			return result;
-//		}
-//
-//		std::vector<layer> layers_;
-//		std::vector<std::vector<neuron>> weights_;
-//	};
-//
-//
-//	namespace feedForward
-//	{
-//		neuron dot(const std::vector<neuron>& a, unsigned int aStart, const std::vector<neuron>& b)
-//		{
-//			neuron result = 0;
-//			for (unsigned int i = aStart, j = 0; j < b.size(); ++i, ++j)
-//				result += a[i] * b[j];
-//			return result;
-//		}
-//
-//		layer feed(const layer& currentLayer, const layer& nextLayer, const std::vector<neuron>& weights)
-//		{
-//			layer result = nextLayer;
-//			for (unsigned int r = 0; r < result.neurons_.size(); ++r)
-//				result.neurons_[r] = result.activation_(dot(weights, r * static_cast<unsigned int>(currentLayer.neurons_.size()), currentLayer.neurons_) + nextLayer.bias_);
-//			return result;
-//		}
-//
-//		layer observation(const network& n, const layer& input)
-//		{
-//			layer result = input;
-//			for (unsigned int hl = 1; hl < n.layers_.size(); ++hl)
-//				result = feed(result, n.layers_[hl], n.weights_[hl-1]);
-//			return result;
-//		}
-//	}
-//	
-//
-//	// calculate error...
-//
-//	// calculate cost...
-//
-//	// backPropagation
-//	namespace backPropagation
-//	{
-//		// back propagation of weights...
-//		std::vector<neuron> backPropagate(const network& n, unsigned int l2, unsigned int l1, const layer& result, const layer& expected)
-//		{
-//
-//		}
-//
-//		std::vector<neuron> backPropagate(const network& n, unsigned int l2, unsigned int l1, const layer& result, const layer& expected)
-//		{
-//
-//		}
-//
-//
-//		// for each layer going backwards...
-//		/*layer propagate(const network& n, unsigned int l2, unsigned int l1, const layer& result, const layer& expected)
-//		{
-//
-//
-//
-//			return layer();
-//		}*/
-//
-//
-//
-//	}
-//
-//
-//}
 
 #endif // NEUROSYS_HPP

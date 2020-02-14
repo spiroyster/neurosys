@@ -29,7 +29,7 @@ namespace neurosys
 					(unsigned char)(buffer[3]));
 		}
 		
-		static std::vector<char> HandwritingLabelsRead(const std::string& filename)
+		static std::vector<neurosys::output> HandwritingLabelsRead(const std::string& filename)
 		{
 			std::ifstream file(filename.c_str(), std::ios::binary | std::ios::ate);
 			if (!file)
@@ -44,9 +44,11 @@ namespace neurosys
 			int32_t count = readint32_t(file, sizeof(int32_t));
 
 			// Read data...
-			std::vector<char> result(count);
+			std::vector<char> labels(count);
 			file.seekg(sizeof(int32_t) * 2);
-			file.read(reinterpret_cast<char *>(&result.front()), count);
+			file.read(reinterpret_cast<char *>(&labels.front()), count);
+
+			std::vector<neurosys::output> result;
 
 			return result;
 		}

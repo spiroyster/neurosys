@@ -14,25 +14,49 @@ int main(int argc, char** argv)
 	try
 	{
 		std::cout << "Loading data (t10k-images-idx3-ubyte)...";
-		std::vector<neurosys::input> trainingImages = neurosys::MNIST::HandwritingImagesRead("t10k-images-idx3-ubyte");
-		//std::vector<neurosys::input> trainingImages = neurosys::MNIST::HandwritingImagesRead("train-images-idx3-ubyte");
+		std::vector<neurosys::input> testImages = neurosys::MNIST::HandwritingImagesRead("t10k-images-idx3-ubyte");		
 		std::cout << "done.\n";
 
 		std::cout << "Loading data (t10k-labels-idx1-ubyte)...";
-		std::vector<char> trainingLabels = neurosys::MNIST::HandwritingLabelsRead("t10k-labels-idx1-ubyte");
-		//std::vector<char> trainingLabels = neurosys::MNIST::HandwritingLabelsRead("train-labels-idx1-ubyte");
+		std::vector<neurosys::output> testLabels = neurosys::MNIST::HandwritingLabelsRead("t10k-labels-idx1-ubyte");
 		std::cout << "done.\n";
 
-		// construct our NN... single 16 node hidden layers, output is 10 neurons, one for each possible digit.
-		/*neurosys::network net({
-			trainingImages.front(),
-			neurosys::layer(16, neurosys::activation::fastSigmoid),
-			neurosys::layer({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }, neurosys::activation::fastSigmoid)
-			});*/
-		neurosys::network net(trainingImages.front(), { neurosys::layer(16, neurosys::activation::sigmoid) }, neurosys::output(10, neurosys::activation::sigmoid, 1.0));
+		neurosys::network net(testImages.front(), { neurosys::layer(16, neurosys::activation::sigmoid) }, neurosys::output(10, neurosys::activation::sigmoid, 1.0));
 
 		// set to randoms...
 		net.reset();
+
+		// First see its performance with no training...
+		unsigned int correct = 0;
+		for (unsigned int n = 0; n < testImages.size(); ++n)
+			correct += neurosys::maths::largest(neurosys::feedForward::observation(net, testImages[n]).back()) == neurosys::maths::largest(testLabels[n].weights()) ? 1 : 0;
+		
+		std::cout << "Untrained model. " << testImages.size() << " observations" << " : " << (static_cast<double>(correct) / static_cast<double>(testImages.size())) * 100.0 << " % correct.\n";
+
+		// Loading in the training data...
+		std::cout << "Loading data (train-images-idx3-ubyte)...";
+		std::vector<neurosys::input> trainImages = neurosys::MNIST::HandwritingImagesRead("train-images-idx3-ubyte");
+		std::cout << "done.\n";
+
+		std::cout << "Loading data (train-labels-idx1-ubyte)...";
+		std::vector<neurosys::output> trainLabels = neurosys::MNIST::HandwritingLabelsRead("train-labels-idx1-ubyte");
+		std::cout << "done.\n";
+
+		// train the model...
+		net = neurosys::feedForward::train(net, trainImages, trainLabels, neurosys::cost::squaredError, 0.01, 32);
+
+		correct = 0;
+		for (unsigned int n = 0; n < testImages.size(); ++n)
+			correct += neurosys::maths::largest(neurosys::feedForward::observation(net, testImages[n]).back()) == neurosys::maths::largest(testLabels[n].weights()) ? 1 : 0;
+
+		std::cout << "Trained model. " << testImages.size() << " observations" << " : " << (static_cast<double>(correct) / static_cast<double>(testImages.size())) * 100.0 << " % correct.\n";
+
+
+		// replay the tests.
+
+
+
+
 
 		// put the values through an see what we get!
 		//unsigned int correct = 0;

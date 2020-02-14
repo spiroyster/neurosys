@@ -31,7 +31,7 @@ TEST_CASE("matrix empty", "[matrix]")
 	}
 }
 
-TEST_CASE("matrix construction", "[matrix]")
+TEST_CASE("matrix square construction", "[matrix][construct]")
 {
 	{
 		neurosys::matrix m(1, 1);
@@ -48,6 +48,31 @@ TEST_CASE("matrix construction", "[matrix]")
 		CHECK(m.isRowVector());
 		CHECK(m.value(0, 0) == 42.0);
 	}
+	{
+		neurosys::matrix m(2, 2);
+		CHECK(m.size() == 4);
+		CHECK(!m.isColumnVector());
+		CHECK(!m.isRowVector());
+		CHECK(m.value(0, 0) == 0);
+		CHECK(m.value(0, 1) == 0);
+		CHECK(m.value(1, 0) == 0);
+		CHECK(m.value(1, 1) == 0);
+	}
+	{
+		neurosys::matrix m({ 1.0, 2.0, 3.0, 4.0 }, 2);
+		CHECK(m.size() == 4);
+		CHECK(!m.isColumnVector());
+		CHECK(!m.isRowVector());
+		CHECK(m.value(0, 0) == 1.0);
+		CHECK(m.value(0, 1) == 2.0);
+		CHECK(m.value(1, 0) == 3.0);
+		CHECK(m.value(1, 1) == 4.0);
+	}
+	
+}
+
+TEST_CASE("matrix mn construct", "[matrix][construct]")
+{
 	{
 		neurosys::matrix m(1, 2);
 		CHECK(m.size() == 2);
@@ -73,42 +98,22 @@ TEST_CASE("matrix construction", "[matrix]")
 		CHECK(m.value(1, 0) == 2.0);
 	}
 	{
-		neurosys::matrix m(2, 2);
-		CHECK(m.size() == 4);
-		CHECK(!m.isColumnVector());
-		CHECK(!m.isRowVector());
-		CHECK(m.value(0, 0) == 0);
-		CHECK(m.value(0, 1) == 0);
-		CHECK(m.value(1, 0) == 0);
-		CHECK(m.value(1, 1) == 0);
-	}
-	{
-		neurosys::matrix m({ 1.0, 2.0, 3.0, 4.0 }, 2);
-		CHECK(m.size() == 4);
+		neurosys::matrix m({ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0 }, 3);
+		CHECK(m.size() == 12);
 		CHECK(!m.isColumnVector());
 		CHECK(!m.isRowVector());
 		CHECK(m.value(0, 0) == 1.0);
 		CHECK(m.value(0, 1) == 2.0);
-		CHECK(m.value(1, 0) == 3.0);
-		CHECK(m.value(1, 1) == 4.0);
-	}
-	{
-		neurosys::matrix m(3, 1);
-		CHECK(m.size() == 3);
-		CHECK(m.isColumnVector());
-		CHECK(!m.isRowVector());
-		CHECK(m.value(0, 0) == 0);
-		CHECK(m.value(1, 0) == 0);
-		CHECK(m.value(2, 0) == 0);
-	}
-	{
-		neurosys::matrix m({ 1.0, 2.0, 3.0 }, 1);
-		CHECK(m.size() == 3);
-		CHECK(m.isColumnVector());
-		CHECK(!m.isRowVector());
-		CHECK(m.value(0, 0) == 1.0);
-		CHECK(m.value(1, 0) == 2.0);
-		CHECK(m.value(2, 0) == 3.0);
+		CHECK(m.value(0, 2) == 3.0);
+		CHECK(m.value(1, 0) == 4.0);
+		CHECK(m.value(1, 1) == 5.0);
+		CHECK(m.value(1, 2) == 6.0);
+		CHECK(m.value(2, 0) == 7.0);
+		CHECK(m.value(2, 1) == 8.0);
+		CHECK(m.value(2, 2) == 9.0);
+		CHECK(m.value(3, 0) == 10.0);
+		CHECK(m.value(3, 1) == 11.0);
+		CHECK(m.value(3, 2) == 12.0);
 	}
 	{
 		neurosys::matrix m(4, 3);
@@ -129,27 +134,26 @@ TEST_CASE("matrix construction", "[matrix]")
 		CHECK(m.value(3, 2) == 0);
 	}
 	{
-		neurosys::matrix m({ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0 }, 3);
-		CHECK(m.size() == 12);
-		CHECK(!m.isColumnVector());
+		neurosys::matrix m(3, 1);
+		CHECK(m.size() == 3);
+		CHECK(m.isColumnVector());
+		CHECK(!m.isRowVector());
+		CHECK(m.value(0, 0) == 0);
+		CHECK(m.value(1, 0) == 0);
+		CHECK(m.value(2, 0) == 0);
+	}
+	{
+		neurosys::matrix m({ 1.0, 2.0, 3.0 }, 1);
+		CHECK(m.size() == 3);
+		CHECK(m.isColumnVector());
 		CHECK(!m.isRowVector());
 		CHECK(m.value(0, 0) == 1.0);
-		CHECK(m.value(0, 1) == 2.0);
-		CHECK(m.value(0, 2) == 3.0);
-		CHECK(m.value(1, 0) == 4.0);
-		CHECK(m.value(1, 1) == 5.0);
-		CHECK(m.value(1, 2) == 6.0);
-		CHECK(m.value(2, 0) == 7.0);
-		CHECK(m.value(2, 1) == 8.0);
-		CHECK(m.value(2, 2) == 9.0);
-		CHECK(m.value(3, 0) == 10.0);
-		CHECK(m.value(3, 1) == 11.0);
-		CHECK(m.value(3, 2) == 12.0);
+		CHECK(m.value(1, 0) == 2.0);
+		CHECK(m.value(2, 0) == 3.0);
 	}
-	
 }
 
-TEST_CASE("matrix neurons", "[matrix]")
+TEST_CASE("neurons contruct", "[neurons][construct]")
 {
 	{
 		neurosys::neurons m(0);
@@ -239,17 +243,17 @@ TEST_CASE("matrix neurons", "[matrix]")
 	}
 }
 
-TEST_CASE("matrix transposeNN", "[matrix]")
+TEST_CASE("matrix square transpose", "[matrix][transpose]")
 {
 	{
 		neurosys::matrix m({ { 1.0 } }, 1);
-		neurosys::matrix n = neurosys::feedForward::transpose(m);
+		neurosys::matrix n = neurosys::maths::transpose(m);
 
 		CHECK(n.value(0, 0) == 1.0);
 	}
 	{
 		neurosys::matrix m({ 1.0, 2.0, 3.0, 4.0 }, 2);
-		neurosys::matrix n = neurosys::feedForward::transpose(m);
+		neurosys::matrix n = neurosys::maths::transpose(m);
 
 		CHECK(n.value(0, 0) == 1.0);
 		CHECK(n.value(0, 1) == 3.0);
@@ -258,7 +262,7 @@ TEST_CASE("matrix transposeNN", "[matrix]")
 	}
 	{
 		neurosys::matrix m({ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 }, 3);
-		neurosys::matrix n = neurosys::feedForward::transpose(m);
+		neurosys::matrix n = neurosys::maths::transpose(m);
 
 		CHECK(n.value(0, 0) == 1.0);
 		CHECK(n.value(0, 1) == 4.0);
@@ -271,11 +275,11 @@ TEST_CASE("matrix transposeNN", "[matrix]")
 		CHECK(n.value(2, 2) == 9.0);
 	}
 }
-TEST_CASE("matrix transposeNM", "[matrix]")
+TEST_CASE("matrix mn transpose", "[matrix][transpose]")
 {
 	{
 		neurosys::matrix m({ { 1.0, 2.0 } }, 2);
-		neurosys::matrix n = neurosys::feedForward::transpose(m);
+		neurosys::matrix n = neurosys::maths::transpose(m);
 
 		CHECK(n.m() == 2);
 		CHECK(n.n() == 1);
@@ -284,7 +288,7 @@ TEST_CASE("matrix transposeNM", "[matrix]")
 	}
 	{
 		neurosys::matrix m({ { 1.0, 2.0 } }, 1);
-		neurosys::matrix n = neurosys::feedForward::transpose(m);
+		neurosys::matrix n = neurosys::maths::transpose(m);
 		CHECK(n.m() == 1);
 		CHECK(n.n() == 2);
 		CHECK(n.value(0, 0) == 1.0);
@@ -292,7 +296,7 @@ TEST_CASE("matrix transposeNM", "[matrix]")
 	}
 	{
 		neurosys::matrix m({ { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 } }, 3);
-		neurosys::matrix n = neurosys::feedForward::transpose(m);
+		neurosys::matrix n = neurosys::maths::transpose(m);
 		CHECK(n.m() == 3);
 		CHECK(n.n() == 2);
 		CHECK(n.value(0, 0) == 1.0);
@@ -304,7 +308,7 @@ TEST_CASE("matrix transposeNM", "[matrix]")
 	}
 	{
 		neurosys::matrix m({ { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 } }, 2);
-		neurosys::matrix n = neurosys::feedForward::transpose(m);
+		neurosys::matrix n = neurosys::maths::transpose(m);
 		CHECK(n.m() == 2);
 		CHECK(n.n() == 3);
 		CHECK(n.value(0, 0) == 1.0);
@@ -316,12 +320,12 @@ TEST_CASE("matrix transposeNM", "[matrix]")
 	}
 }
 
-TEST_CASE("matrix multiply", "[matrix]")
+TEST_CASE("matrix multiply", "[matrix][multiply]")
 {
 	{
 		neurosys::matrix m({ {1.0} }, 1);
 		neurosys::matrix n({ {1.0} }, 1);
-		neurosys::matrix result = neurosys::feedForward::multiply(m, n);
+		neurosys::matrix result = neurosys::maths::product(m, n);
 
 		CHECK(result.size() == 1);
 		CHECK(result.value(0, 0) == 1.0);
@@ -329,7 +333,7 @@ TEST_CASE("matrix multiply", "[matrix]")
 	{
 		neurosys::matrix m({ {1.0, 2.0, 3.0 } }, 3);
 		neurosys::matrix n({ {1.0, 2.0, 3.0 } }, 1);
-		neurosys::matrix result = neurosys::feedForward::multiply(m, n);
+		neurosys::matrix result = neurosys::maths::product(m, n);
 
 		CHECK(result.size() == 1);
 		CHECK(result.value(0, 0) == 14.0);
@@ -337,7 +341,7 @@ TEST_CASE("matrix multiply", "[matrix]")
 	{
 		neurosys::matrix m({ {1.0, 2.0, 3.0 } }, 1);
 		neurosys::matrix n({ {1.0, 2.0, 3.0 } }, 3);
-		neurosys::matrix result = neurosys::feedForward::multiply(m, n);
+		neurosys::matrix result = neurosys::maths::product(m, n);
 
 		CHECK(result.size() == 9);
 		CHECK(result.value(0, 0) == 1.0);
@@ -353,7 +357,7 @@ TEST_CASE("matrix multiply", "[matrix]")
 	{
 		neurosys::matrix m({ {1.0, 2.0, 3.0, 4.0 } }, 2);
 		neurosys::matrix n({ {1.0, 2.0, 3.0, 4.0 } }, 2);
-		neurosys::matrix result = neurosys::feedForward::multiply(m, n);
+		neurosys::matrix result = neurosys::maths::product(m, n);
 
 		CHECK(result.size() == 4);
 		CHECK(result.value(0, 0) == 7.0);
@@ -364,17 +368,17 @@ TEST_CASE("matrix multiply", "[matrix]")
 	
 }
 
-TEST_CASE("matrix addScalar", "[matrix]")
+TEST_CASE("matrix add scalar", "[matrix][add]")
 {
 	{
 		neurosys::matrix m({ {1.0} }, 1);
-		neurosys::matrix result = neurosys::feedForward::add(m, 1.0);
+		neurosys::matrix result = neurosys::maths::add(m, 1.0);
 		CHECK(result.size() == 1);
 		CHECK(result.value(0, 0) == 2.0);
 	}
 	{
 		neurosys::matrix m({1.0, 2.0, 3.0}, 1);
-		neurosys::matrix result = neurosys::feedForward::add(m, 1.0);
+		neurosys::matrix result = neurosys::maths::add(m, 1.0);
 		CHECK(result.size() == 3);
 		CHECK(result.value(0, 0) == 2.0);
 		CHECK(result.value(1, 0) == 3.0);
@@ -382,7 +386,7 @@ TEST_CASE("matrix addScalar", "[matrix]")
 	}
 	{
 		neurosys::matrix m({ 1.0, 2.0, 3.0 }, 3);
-		neurosys::matrix result = neurosys::feedForward::add(m, 1.0);
+		neurosys::matrix result = neurosys::maths::add(m, 1.0);
 		CHECK(result.size() == 3);
 		CHECK(result.value(0, 0) == 2.0);
 		CHECK(result.value(0, 1) == 3.0);
@@ -390,7 +394,7 @@ TEST_CASE("matrix addScalar", "[matrix]")
 	}
 	{
 		neurosys::matrix m({ 1.0, 2.0, 3.0, 4.0 }, 2);
-		neurosys::matrix result = neurosys::feedForward::add(m, 1.0);
+		neurosys::matrix result = neurosys::maths::add(m, 1.0);
 		CHECK(result.size() == 4);
 		CHECK(result.value(0, 0) == 2.0);
 		CHECK(result.value(0, 1) == 3.0);
@@ -399,7 +403,7 @@ TEST_CASE("matrix addScalar", "[matrix]")
 	}
 	{
 		neurosys::matrix m({ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 }, 3);
-		neurosys::matrix result = neurosys::feedForward::add(m, 1.0);
+		neurosys::matrix result = neurosys::maths::add(m, 1.0);
 		CHECK(result.size() == 6);
 		CHECK(result.value(0, 0) == 2.0);
 		CHECK(result.value(0, 1) == 3.0);
@@ -410,7 +414,7 @@ TEST_CASE("matrix addScalar", "[matrix]")
 	}
 	{
 		neurosys::matrix m({ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 }, 2);
-		neurosys::matrix result = neurosys::feedForward::add(m, 1.0);
+		neurosys::matrix result = neurosys::maths::add(m, 1.0);
 		CHECK(result.size() == 6);
 		CHECK(result.value(0, 0) == 2.0);
 		CHECK(result.value(0, 1) == 3.0);
@@ -422,12 +426,12 @@ TEST_CASE("matrix addScalar", "[matrix]")
 
 }
 
-TEST_CASE("matrix addMatrix", "[matrix]")
+TEST_CASE("matrix add matrix", "[matrix][add]")
 {
 	{
 		neurosys::matrix m({ {1.0} }, 1);
 		neurosys::matrix n({ {1.0} }, 1);
-		neurosys::matrix result = neurosys::feedForward::add(m, n);
+		neurosys::matrix result = neurosys::maths::add(m, n);
 		CHECK(result.size() == 1);
 		CHECK(result.value(0, 0) == 2.0);
 	}
@@ -440,7 +444,7 @@ TEST_CASE("matrix addMatrix", "[matrix]")
 //}
 
 
-TEST_CASE("network construct", "[network][construct][working]")
+TEST_CASE("network construct", "[network][construct]")
 {
     {
         neurosys::network net(neurosys::input(1), {}, neurosys::output(1, neurosys::activation::linear, 1.0));
@@ -496,7 +500,7 @@ TEST_CASE("network construct", "[network][construct][working]")
         neurosys::network net(neurosys::input(2), { neurosys::layer(2, neurosys::activation::linear) }, neurosys::output(2, neurosys::activation::linear, 1.0));
         CHECK(net.size() == 3);        
         CHECK(net[0].size() == 2);
-        CHECK(net[0].weights().size() == 4);        
+        CHECK(net[0].weights().size() == 2);        
         CHECK(net[1].size() == 2);        
         CHECK(net[1].weights().size() == 4);        
         CHECK(net[2].size() == 2);        
@@ -506,7 +510,7 @@ TEST_CASE("network construct", "[network][construct][working]")
         neurosys::network net(neurosys::input(3), { neurosys::layer(3, neurosys::activation::linear) }, neurosys::output(3, neurosys::activation::linear, 1.0));
         CHECK(net.size() == 3);        
         CHECK(net[0].size() == 3);
-        CHECK(net[0].weights().size() == 9);        
+        CHECK(net[0].weights().size() == 3);        
         CHECK(net[1].size() == 3);        
         CHECK(net[1].weights().size() == 9);        
         CHECK(net[2].size() == 3);        
@@ -514,43 +518,76 @@ TEST_CASE("network construct", "[network][construct][working]")
     }
 }
 
+TEST_CASE("feedForward z", "[feedForward][z]")
+{
 
-TEST_CASE("network anotsorandomwalk", "[network][anotsorandomwalk]")
+
+
+}
+
+TEST_CASE("feedForward a", "[feedForward][a]")
+{
+
+
+
+}
+
+TEST_CASE("feedForward observation", "[feedForward][observation]")
+{
+
+
+
+}
+
+
+TEST_CASE("anotsorandomwalk", "[anotsorandomwalk]")
 {
 	// https://www.anotsorandomwalk.com/backpropagation-example-with-numbers-step-by-step/
 
 	neurosys::network net(
-		  neurosys::input(3), 
+		neurosys::input(3),
 		{ neurosys::layer(2,neurosys::activation::sigmoid, 0.5) },
-		  neurosys::output(2, neurosys::activation::sigmoid, 0.5) 
+		neurosys::output(2, neurosys::activation::sigmoid, 0.5)
 	);
 
-    net[1].weights().value(0, 0) = 0.1;
-    net[1].weights().value(0, 1) = 0.2;
-    net[1].weights().value(1, 0) = 0.3;
-    net[1].weights().value(1, 1) = 0.4;
-    net[1].weights().value(2, 0) = 0.5;
-    net[1].weights().value(2, 1) = 0.6;
-    net[2].weights().value(0, 0) = 0.7;
-    net[2].weights().value(0, 1) = 0.8;
-    net[2].weights().value(1, 0) = 0.9;
-    net[2].weights().value(1, 1) = 0.1;
-    
-    neurosys::neurons result = neurosys::feedForward::z(neurosys::neurons({ 1.0, 4.0, 5.0 }), net[1]);
-    
-    
-    //neurosys::output result = neurosys::feedForward::observation(net, neurosys::input({ 1.0, 4.0, 5.0 }));
-    
-    //CHECK(result[0] == 9866);
-    //CHECK(result[1] == 9950);
-    
-    
-    
-    
-    //neurosys::layer({ 1.0, 4.0, 5.0 }, neurosys::activation::linear),
-    //		neurosys::layer({ 0.9866, 0.9950 }, neurosys::activation::sigmoid, 0.5),
-    //		neurosys::layer({ 0.8896, 0.8004 }, neurosys::activation::sigmoid, 0.5)
-    
+	net[1].weight(0, 0) = 0.1;
+	net[1].weight(0, 1) = 0.2;
+	net[1].weight(1, 0) = 0.3;
+	net[1].weight(1, 1) = 0.4;
+	net[1].weight(2, 0) = 0.5;
+	net[1].weight(2, 1) = 0.6;
+
+	net[2].weight(0, 0) = 0.7;
+	net[2].weight(0, 1) = 0.8;
+	net[2].weight(1, 0) = 0.9;
+	net[2].weight(1, 1) = 0.1;
+
+	neurosys::input in({ { 1.0, 4.0, 5.0 } });
+
+	std::vector<neurosys::neurons> result = neurosys::feedForward::observation(net, in);
+
+	CHECK(result[1].value(0) == 0.8896);
+	CHECK(result[1].value(1) == 0.8004);
+
+	// Perform the back prop.
+	neurosys::output expected({ { 0.1, 0.05 } });
+	neurosys::network bp = neurosys::feedForward::backPropagation(net, in, expected, neurosys::cost::squaredError, 0.01);
+	
+	// Check the weights of the resultant net.
+	CHECK(bp[1].weight(0, 0) == 0.1);
+	CHECK(bp[1].weight(0, 1) == 0.2);
+	CHECK(bp[1].weight(1, 0) == 0.2999);
+	CHECK(bp[1].weight(1, 1) == 0.4);
+	CHECK(bp[1].weight(2, 0) == 0.4999);
+	CHECK(bp[1].weight(2, 1) == 0.6);
+	CHECK(bp[1].bias() == 0.5);
+
+	CHECK(bp[2].weight(0, 0) == 0.6992);
+	CHECK(bp[2].weight(0, 1) == 0.7988);
+	CHECK(bp[2].weight(1, 0) == 0.8992);
+	CHECK(bp[2].weight(1, 1) == 0.0988);
+	CHECK(bp[2].bias() == 0.4980);
+
 }
 
 //namespace
