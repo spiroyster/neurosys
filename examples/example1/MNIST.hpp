@@ -15,8 +15,6 @@ namespace neurosys
 		// load in the images into individual layers...
 		// http://yann.lecun.com/exdb/mnist/
 
-		typedef std::vector<neurosys::input> Images;
-
 		static int32_t readint32_t(std::ifstream& file, std::streampos pos)
 		{
 			char buffer[4];
@@ -48,12 +46,14 @@ namespace neurosys
 			file.seekg(sizeof(int32_t) * 2);
 			file.read(reinterpret_cast<char *>(&labels.front()), count);
 
-			std::vector<neurosys::output> result;
+			std::vector<neurosys::output> result(labels.size(), neurosys::output(neurons(10)));
+            for (unsigned int l = 0; l < labels.size(); ++l)
+                result[l].weights()[static_cast<unsigned int>(labels[l])] = 1.0;
 
 			return result;
 		}
 
-		static Images HandwritingImagesRead(const std::string& filename)
+		static std::vector<neurosys::input> HandwritingImagesRead(const std::string& filename)
 		{
 			std::ifstream file(filename.c_str(), std::ios::binary | std::ios::ate);
 			if (!file)
@@ -78,7 +78,7 @@ namespace neurosys
 			file.read(reinterpret_cast<char *>(&pixels.front()), pixels.size());
 
 			// convert to the neurosys layer type...
-			Images result(count, neurosys::input(imagePixelCount));
+			std::vector<neurosys::input> result(count, neurosys::input(imagePixelCount));
 			for (int n = 0; n < count; ++n)
 				for (int nn = 0; nn < imagePixelCount; ++nn)
 					result[n].neuron(nn) = static_cast<double>(pixels[n*imagePixelCount + nn]) / 255.0;
@@ -87,6 +87,24 @@ namespace neurosys
 		}
 
 
+		static unsigned int test(const network& net, const std::vector<input>& i, const std::vector<output>& o)
+        {
+            unsigned int result = 0;
+            #pragma omp for
+            for (unsigned int n = 0; n < i.size(); ++n)
+            {
+                unsigned int resultCorrect = neurosys::maths::largest(neurosys::feedForward::observation(net, i[n]).back()) == neurosys::maths::largest(o[n].weights()) ? 1 : 0;
+                if (resultCorrect)
+                {
+                    #pragma omp critical
+                    {
+                        ++result;
+                    }
+                }
+            }
+            return result;
+        }
+    
 
 
 	}

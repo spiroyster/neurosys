@@ -13,6 +13,7 @@ int main(int argc, char** argv)
 	// load in the MNIST examples...
 	try
 	{
+        // Load in the test data.
 		std::cout << "Loading data (t10k-images-idx3-ubyte)...";
 		std::vector<neurosys::input> testImages = neurosys::MNIST::HandwritingImagesRead("t10k-images-idx3-ubyte");		
 		std::cout << "done.\n";
@@ -21,19 +22,7 @@ int main(int argc, char** argv)
 		std::vector<neurosys::output> testLabels = neurosys::MNIST::HandwritingLabelsRead("t10k-labels-idx1-ubyte");
 		std::cout << "done.\n";
 
-		neurosys::network net(testImages.front(), { neurosys::layer(16, neurosys::activation::sigmoid) }, neurosys::output(10, neurosys::activation::sigmoid, 1.0));
-
-		// set to randoms...
-		net.reset();
-
-		// First see its performance with no training...
-		unsigned int correct = 0;
-		for (unsigned int n = 0; n < testImages.size(); ++n)
-			correct += neurosys::maths::largest(neurosys::feedForward::observation(net, testImages[n]).back()) == neurosys::maths::largest(testLabels[n].weights()) ? 1 : 0;
-		
-		std::cout << "Untrained model. " << testImages.size() << " observations" << " : " << (static_cast<double>(correct) / static_cast<double>(testImages.size())) * 100.0 << " % correct.\n";
-
-		// Loading in the training data...
+        // Load in the training data...
 		std::cout << "Loading data (train-images-idx3-ubyte)...";
 		std::vector<neurosys::input> trainImages = neurosys::MNIST::HandwritingImagesRead("train-images-idx3-ubyte");
 		std::cout << "done.\n";
@@ -42,46 +31,35 @@ int main(int argc, char** argv)
 		std::vector<neurosys::output> trainLabels = neurosys::MNIST::HandwritingLabelsRead("train-labels-idx1-ubyte");
 		std::cout << "done.\n";
 
-		// train the model...
-		net = neurosys::feedForward::train(net, trainImages, trainLabels, neurosys::cost::squaredError, 0.01, 32);
+        // Create our neural network. 
+		neurosys::network net(testImages.front(), { neurosys::layer(16, neurosys::activation::sigmoid) }, neurosys::output(10, neurosys::activation::sigmoid, 1.0));
 
-		correct = 0;
-		for (unsigned int n = 0; n < testImages.size(); ++n)
-			correct += neurosys::maths::largest(neurosys::feedForward::observation(net, testImages[n]).back()) == neurosys::maths::largest(testLabels[n].weights()) ? 1 : 0;
+		// Reset our neural network. This sets both the bias and weights to random values.
+		net.reset();
 
-		std::cout << "Trained model. " << testImages.size() << " observations" << " : " << (static_cast<double>(correct) / static_cast<double>(testImages.size())) * 100.0 << " % correct.\n";
+		// First check the accuracy of the model without training.
+		unsigned int correct = neurosys::MNIST::test(net, testImages, testLabels);
+		std::cout << "Untrained. " << correct << " observations: " << (static_cast<double>(correct) / static_cast<double>(testImages.size())) * 100.0 << " % correct.\n";
 
+        // single training...
+        
+        
+        
+        
+		// training...
+        for (unsigned int m = 0; m < trainImages.size(); ++m)
+        {
+            std::cout << "Training " << m << ". ";
+            
+            // train the model.
+            net = neurosys::feedForward::backPropagate(net, trainImages[m], trainLabels[m], neurosys::cost::squaredError, 0.01);
 
-		// replay the tests.
-
-
-
-
-
-		// put the values through an see what we get!
-		//unsigned int correct = 0;
-		//for (int i = 0; i < trainingImages.size(); ++i)
-		//{
-			//std::cout << "forward " << i << " |";
-
-			// put through network...
-			//neurosys::layer output = neurosys::feedForward::observation(net, trainingImages[i]);
-
-			// find out which digit...(this is the index of the highest value neruon in the output)
-			//std::size_t value = output.largest();
-
-			//std::cout << "  expected: " << static_cast<unsigned int>(trainingLabels[i]) << " actual : " << value << "  (neuron:" << output.neurons_[value] << ")\n";
-
-			// compare...
-			//correct += value == trainingLabels[i] ? 1 : 0;
-		//}
-
-		// caluclate the percentage correct...
-		//double percent = static_cast<double>(correct) / static_cast<double>(trainingImages.size()) * 100.0;
-
-		//std::cout << "==================\n";
-		//std::cout << " " << correct << " correct observations (" << percent << "%).\n";
-
+            // test the new model...
+            correct = neurosys::MNIST::test(net, testImages, testLabels);
+            
+            std::cout << correct << " observations: " << (static_cast<double>(correct) / static_cast<double>(testImages.size())) * 100.0 << " % correct.\n";
+        }
+         
 		return 0;
 	}
 	catch (const std::exception& e)

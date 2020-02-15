@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <random>
 #include <numeric>
+#include <algorithm>
 
 
 namespace neurosys
@@ -33,29 +34,7 @@ namespace neurosys
 		};
 	}
 
-	namespace cost
-	{
-		typedef std::function<double(const double& output, const double& expected)> costFn;
-
-		enum cost
-		{
-			squaredError,
-			difference
-		};
-
-		std::vector<costFn> Fn
-		{
-			[](const double& output, const double& expected) { return 0.5 * ((output - expected) * (output - expected)); },
-			[](const double& output, const double& expected) { return output - expected; }
-		};
-
-		std::vector<costFn> FnPrime
-		{
-			[](const double& output, const double& expected) { return (output - expected); },
-			[](const double& output, const double& expected) { return 1.0; }
-		};
-
-	}
+	
 
 
 	class matrix
@@ -248,6 +227,7 @@ namespace neurosys
 		}
 
 		double& neuron(unsigned int n) { return weights_[n]; }
+		
 	};
 
 	class output : public layer
@@ -311,6 +291,37 @@ namespace neurosys
 	private:
 		std::vector<layer> layers_;
 	};
+    
+    namespace cost
+	{
+		typedef std::function<double(const double& output, const double& expected)> costFn;
+
+		enum function
+		{
+			squaredError = 0,
+			difference
+		};
+
+		std::vector<costFn> Fn
+		{
+			[](const double& output, const double& expected) { return 0.5 * ((output - expected) * (output - expected)); },
+			[](const double& output, const double& expected) { return output - expected; }
+		};
+
+		std::vector<costFn> FnPrime
+		{
+			[](const double& output, const double& expected) { return (output - expected); },
+			[](const double& output, const double& expected) { return 1.0; }
+		};
+        
+        neurons observation(const neurosys::neurons& output, const neurosys::neurons& expected, costFn C)
+        {
+            neurons result = output;
+			for (unsigned int r = 0; r < result.size(); ++r)
+				result[r] = C(result.values()[r], expected.weights().values()[r]);
+			return neurons(result.values());
+        }
+	}
 	
 	namespace feedForward
 	{
@@ -331,14 +342,7 @@ namespace neurosys
 			return neurons(maths::add(maths::product(l.weights(), ns), l.bias()).values());
 		}
 
-		neurons traverse(const layer& l, const neurons& i)
-		{
-			assert(i.n() == 1);
-			assert(i.m() == l.weights().n());
-
-			return a(z(i.values(), l), activation::Fn[l.activation()]);
-		}
-
+		// The last layer is effectively the output.
 		std::vector<neurons> observation(const network& net, const input& i)
 		{
 			std::vector<neurons> result;
@@ -346,21 +350,13 @@ namespace neurosys
 
 			result.push_back(i.weights().values());
 			for (unsigned int l = 1; l < net.size(); ++l)
-				result.push_back(traverse(net[l], result.back()));
+				result.push_back(a(z(result.back().values(), net[l]), activation::Fn[net[l].activation()]));
 
 			return result;
 		}
 		
-		neurons cost(const output& result, const output& expected, cost::costFn& C)
-		{
-			matrix ret = result.weights();
-			for (unsigned int r = 0; r < result.size(); ++r)
-				ret[r] = C(result.weights()[r], expected.weights()[r]);
-			return neurons(ret.values());
-		}
-
-		// cost is (o - t).
-		network backPropagation(const network& net, const input& i, const output& expected, const cost::cost& C, const double& learningRate)
+		
+		network backPropagate(const network& net, const input& i, const output& expected, const cost::cost& C, const double& learningRate)
 		{
 			assert(net.size() >= 2);
 
@@ -370,7 +366,7 @@ namespace neurosys
 			std::vector<neurons> ff = observation(net, i);
 			
 			// Calculate the output error... this is the output vs expected.
-			matrix dO = cost(ff.back(), expected, cost::FnPrime[C]);
+			matrix dO = cost::observation(ff.back(), expected.weights(), cost::FnPrime[C]);
 
 			// Calculate dZ (delta sigmoid)
 			matrix dZ = a(neurons(dO.values()), activation::FnPrime[net[net.size() - 1].activation()]);
@@ -401,36 +397,10 @@ namespace neurosys
 			return result;
 		}
 
-		typedef std::function<neurons(unsigned int n, const output& o)> expectedFn;
-
-		network train(const network& net, const std::vector<input>& i, const std::vector<output>& o, const cost::cost& C, double learningRate, unsigned int start, unsigned int end)
-		{
-
-
-			for (unsigned int n = start; n < end; ++n)
-			{
-
-
-			}
-
-			// back propagate...
-
-		}
-
-		network train(const network& net, const std::vector<input>& i, const std::vector<output>& o, const cost::cost& C, double learningRate, unsigned int batchSize)
-		{
-			network result = net;
-			for (unsigned int n = 0; n < i.size(); n += batchSize)
-			{
-				result = train(result, i, o, C, learningRate, n )
-			}
-				
-		}
-
-		network train(const network& net, const std::vector<input>& i, const std::vector<output>& o, const cost::cost& C, double learningRate)
-		{
-			return train(net, i, o, C, learningRate, i.size());
-		}
+		//network backPropagate(const network& net, const std::vector<input>& i, const std::vector<output>& expected, const cost::cost& C, const double& learningRate, unsigned int batchSize)
+        //{
+         //   return net;   
+        //}
 
 	}
 

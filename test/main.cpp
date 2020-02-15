@@ -8,6 +8,15 @@
 //TEST_CASE("activation linear", "[activation]")
 //TEST_CASE("activation linearPrime", "[activation]")
 
+
+namespace
+{
+    bool ApproxEquals(const double& a, const double& b)
+    {
+        return sqrt((b-a)*(b-a)) < 0.01;
+    }
+}
+
 TEST_CASE("matrix empty", "[matrix]")
 {
 	{
@@ -153,7 +162,7 @@ TEST_CASE("matrix mn construct", "[matrix][construct]")
 	}
 }
 
-TEST_CASE("neurons contruct", "[neurons][construct]")
+TEST_CASE("neurons construct", "[neurons][construct]")
 {
 	{
 		neurosys::neurons m(0);
@@ -443,8 +452,7 @@ TEST_CASE("matrix add matrix", "[matrix][add]")
 //{
 //}
 
-
-TEST_CASE("network construct", "[network][construct]")
+TEST_CASE("perceptron construct", "[perceptron][network][construct]")
 {
     {
         neurosys::network net(neurosys::input(1), {}, neurosys::output(1, neurosys::activation::linear, 1.0));
@@ -486,6 +494,13 @@ TEST_CASE("network construct", "[network][construct]")
         CHECK(net[1].size() == 3);        
         CHECK(net[1].weights().size() == 3);        
     }
+}
+
+
+
+TEST_CASE("network construct", "[network][construct]")
+{
+    
     {
         neurosys::network net(neurosys::input(1), { neurosys::layer(1, neurosys::activation::linear) }, neurosys::output(1, neurosys::activation::linear, 1.0));
         CHECK(net.size() == 3);        
@@ -539,6 +554,13 @@ TEST_CASE("feedForward observation", "[feedForward][observation]")
 
 }
 
+TEST_CASE("feedForward backPropagate", "[feedForward][backPropagate]")
+{
+    
+}
+
+// train...
+
 
 TEST_CASE("anotsorandomwalk", "[anotsorandomwalk]")
 {
@@ -562,16 +584,18 @@ TEST_CASE("anotsorandomwalk", "[anotsorandomwalk]")
 	net[2].weight(1, 0) = 0.9;
 	net[2].weight(1, 1) = 0.1;
 
-	neurosys::input in({ { 1.0, 4.0, 5.0 } });
+	neurosys::input in({ 1.0, 4.0, 5.0 });
 
 	std::vector<neurosys::neurons> result = neurosys::feedForward::observation(net, in);
 
-	CHECK(result[1].value(0) == 0.8896);
-	CHECK(result[1].value(1) == 0.8004);
-
+    CHECK(ApproxEquals(result[1].value(0), 0.9866));
+	CHECK(ApproxEquals(result[1].value(1), 0.9950));
+    CHECK(ApproxEquals(result[2].value(0), 0.8896));
+    CHECK(ApproxEquals(result[2].value(1), 0.8004));
+    
 	// Perform the back prop.
 	neurosys::output expected({ { 0.1, 0.05 } });
-	neurosys::network bp = neurosys::feedForward::backPropagation(net, in, expected, neurosys::cost::squaredError, 0.01);
+	neurosys::network bp = neurosys::feedForward::backPropagate(net, in, expected, neurosys::cost::squaredError, 0.01);
 	
 	// Check the weights of the resultant net.
 	CHECK(bp[1].weight(0, 0) == 0.1);
