@@ -578,7 +578,6 @@ TEST_CASE("anotsorandomwalk", "[anotsorandomwalk]")
 	net[1].weight(1, 1) = 0.4;
 	net[1].weight(2, 0) = 0.5;
 	net[1].weight(2, 1) = 0.6;
-
 	net[2].weight(0, 0) = 0.7;
 	net[2].weight(0, 1) = 0.8;
 	net[2].weight(1, 0) = 0.9;
@@ -595,7 +594,7 @@ TEST_CASE("anotsorandomwalk", "[anotsorandomwalk]")
     
 	// Perform the back prop.
 	neurosys::output expected({ { 0.1, 0.05 } });
-	neurosys::network bp = neurosys::feedForward::backPropagate(net, in, expected, neurosys::cost::squaredError, 0.01);
+	neurosys::network bp = neurosys::feedForward::backPropagate(net, in, expected.neurons(), neurosys::cost::squaredError, 0.01);
 	
 	// Check the weights of the resultant net.
 	CHECK(bp[1].weight(0, 0) == 0.1);

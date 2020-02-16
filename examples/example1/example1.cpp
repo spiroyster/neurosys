@@ -52,7 +52,7 @@ int main(int argc, char** argv)
             std::cout << "Training " << m << ". ";
             
             // train the model.
-            net = neurosys::feedForward::backPropagate(net, trainImages[m], trainLabels[m], neurosys::cost::squaredError, 0.01);
+            net = neurosys::feedForward::backPropagate(net, trainImages[m], trainLabels[m].neurons(), neurosys::cost::squaredError, 0.1);
 
             // test the new model...
             correct = neurosys::MNIST::test(net, testImages, testLabels);
