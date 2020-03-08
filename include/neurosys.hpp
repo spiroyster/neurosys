@@ -11,32 +11,7 @@
 
 namespace neurosys
 {
-	namespace activation
-	{
-		typedef std::function<double(const double& x)> activationFn;
-
-		enum function
-		{
-			sigmoid,
-			linear
-		};
-
-		std::vector<activationFn> Fn
-		{
-			[](const double& x) { return 1.0 / (1.0 + exp(-x)); },
-			[](const double& x) { return x; }
-		};
-
-		std::vector<activationFn> FnPrime
-		{
-			[](const double& x) { return x * (1.0 - x); },
-			[](const double& x) { return 1.0; }
-		};
-	}
-
 	
-
-
 	class matrix
 	{
 	public:
@@ -66,6 +41,7 @@ namespace neurosys
 	class neurons : public matrix
 	{
 	public:
+		neurons(const matrix& m) : matrix(m.values(), m.n()) {}
 		neurons(unsigned int n) : matrix(n, 1) {}
 		neurons(const std::vector<double>& values) : matrix(values, 1) {}
 
@@ -165,13 +141,77 @@ namespace neurosys
 			return static_cast<unsigned int>(std::distance(m.values().begin(), std::max_element(m.values().begin(), m.values().end())));
 		}
 
-		double average(const matrix& m)
+		double mean(const matrix& m)
 		{
-			return sum(m) / static_cast<float>(m.size());
+			return sum(m) / static_cast<double>(m.size());
+		}
+
+		double median(const matrix& m)
+		{
+			std::vector<double> sorted = m.values();
+			std::sort(sorted.begin(), sorted.end());
+			return sorted[(m.size() + 1) / 2];
 		}
 	}
 
-	
+	namespace activation
+	{
+		enum function
+		{
+			sigmoid,
+			linear
+		};
+
+		typedef std::function<double(const double&)> activationFn;
+
+		std::vector<activationFn> Fn
+		{
+			[](const double& x) { return 1.0 / (1.0 + exp(-x)); },
+			[](const double& x) { return x; }
+		};
+
+		std::vector<activationFn> FnPrime
+		{
+			[](const double& x) { return x * (1.0 - x); },
+			[](const double& x) { return 1.0; }
+		};
+
+	}
+
+	namespace cost
+	{
+		
+		enum function
+		{
+			squaredError,
+			crossEntropy
+		};
+
+		typedef std::function<neurons(const neurons&, const neurons&)> costFn;
+
+		std::vector<costFn> Fn
+		{
+			[](const neurons& output, const neurons& expected) 
+			{
+				neurons result(maths::subtract(output, expected).values()); 
+				return maths::hadamard(result, result); 
+			}
+			/*[](const neurons& output, const neurons& expected) 
+			{ 
+				neurons result = output;
+				std::for_each(result.values().begin(), result.values().end(), [&expected](const double& v) { return v * std::log(expected); });
+				return -maths:sum(result);
+			}*/
+		};
+
+		std::vector<costFn> FnPrime
+		{
+			[](const neurons& output, const neurons& expected) { return maths::subtract(output, expected); },
+			//[](const neurons& output, const neurons& expected) { return maths::subtract(output, expected); }
+		};
+
+		
+	}
 
 
 	// layer (weight matrix), bias...
@@ -226,8 +266,6 @@ namespace neurosys
 		{
 		}
 
-		double& neuron(unsigned int n) { return weights_[n]; }
-		
 		const neurosys::neurons& neurons() const { return static_cast<const neurosys::neurons&>(weights_); }
 	};
 
@@ -244,12 +282,13 @@ namespace neurosys
 		{
 		}
 
-		const double& neuron(unsigned int n) const { return weights_[n]; }
-
 		const neurosys::neurons& neurons() const { return static_cast<const neurosys::neurons&>(weights_); }
 	};
 
 	
+
+
+
 	// network
 		// multiple layers..
 
@@ -295,36 +334,6 @@ namespace neurosys
 		std::vector<layer> layers_;
 	};
     
-    namespace cost
-	{
-		typedef std::function<double(const double& output, const double& expected)> costFn;
-
-		enum function
-		{
-			squaredError = 0,
-			difference
-		};
-
-		std::vector<costFn> Fn
-		{
-			[](const double& output, const double& expected) { return 0.5 * ((output - expected) * (output - expected)); },
-			[](const double& output, const double& expected) { return output - expected; }
-		};
-
-		std::vector<costFn> FnPrime
-		{
-			[](const double& output, const double& expected) { return (output - expected); },
-			[](const double& output, const double& expected) { return 1.0; }
-		};
-        
-        neurons observation(const neurosys::neurons& output, const neurosys::neurons& expected, costFn C)
-		{
-            neurons result = output;
-			for (unsigned int r = 0; r < result.size(); ++r)
-				result[r] = C(result.values()[r], expected.values()[r]);
-			return neurons(result.values());
-        }
-	}
 	
 	namespace feedForward
 	{
@@ -369,37 +378,27 @@ namespace neurosys
 			std::vector<neurons> ff = observation(net, i);
 			
 			// Calculate the output error... this is the output vs expected.
-			matrix dO = cost::observation(ff.back(), expected, cost::FnPrime[C]);
+			neurons dO = cost::FnPrime[C](ff.back(), expected);//cost::observation(ff.back(), expected, cost::FnPrime[C]);
 
 			// Calculate dZ (delta sigmoid)
-			matrix dZ = a(neurons(dO.values()), activation::FnPrime[net[net.size() - 1].activation()]);
+			matrix dZ = a(dO, activation::FnPrime[net[net.size() - 1].activation()]);
 
 			// Calculate the delta matrix.. (dO * dZ)
-			matrix dZdO = maths::hadamard(dO, dZ);
+			matrix dOdZ = maths::hadamard(dO, dZ);
 			
 			for (unsigned int l = net.size() - 1; l > 0; --l)
 			{
 				// calculate the delta weight matrix... (dZ(l) * h(l-1))
-				result[l].weights() = maths::product(dZdO, maths::transpose(ff[l - 1]));
-				result[l].bias(maths::sum(dZdO));
-
-
-
-				//matrix dW = maths::product(dZdO, maths::transpose(ff[l - 1]));
-
-				// update the weights... wn = wn - learnRate ( dW )
-				//result[l].weights() = maths::subtract(net[l].weights(), maths::scale(dW, learningRate));
-
-				// update the bias... sum of dZ (or just dZ)
-				//result[l].bias(net[l].bias() - (learningRate * maths::sum(dZdO)));
+				result[l].weights() = maths::product(dOdZ, maths::transpose(ff[l - 1]));
+				result[l].bias(maths::mean(dOdZ));
 
 				// calculate the next delta... dE(l) -> dE(l-1)
-				dO = maths::product(maths::transpose(net[l].weights()), dZdO);
+				dO = neurons(maths::product(maths::transpose(net[l].weights()), dOdZ).values());
 
 				// calculate the new deltaZ... dZ(l) -> dZ(l-1)
-				dZ = a(neurons(dO.values()), activation::FnPrime[net[l-1].activation()]);
+				dZ = a(dO, activation::FnPrime[net[l-1].activation()]);
 
-				dZdO = maths::hadamard(dO, dZ);
+				dOdZ = maths::hadamard(dO, dZ);
 			}
 
 			// update all the weights and bias...
@@ -412,31 +411,62 @@ namespace neurosys
 			return result;
 		}
 
-		network backPropagate(const network& net, const std::vector<input>& i, const std::vector<output>& expected, const cost::function& C, const double& learningRate, unsigned int batchSize)
-        {
+		typedef std::function<void(unsigned int b, unsigned int n, const neurosys::network& result)> ObservationCompleteCallback;
+		typedef std::function<void(unsigned int b, const neurosys::network& result)> BatchCompleteCallback;
+		typedef std::function<void(unsigned int b, const neurosys::network& result)> BatchBeginCallback;
+
+		network backPropagate(
+			const network& net, 
+			const std::vector<input>& in, 
+			const std::vector<output>& expected, 
+			const cost::function& C, 
+			const double& learningRate, 
+			unsigned int batchSize,
+			BatchBeginCallback bbc = [](unsigned int b, const neurosys::network& result) {}, 
+			BatchCompleteCallback bcc = [](unsigned int b, const neurosys::network& result) {},
+			ObservationCompleteCallback occ = [](unsigned int b, unsigned int n, const neurosys::network& result) {}
+		)
+		{
 			network result = net;
 
-			for (unsigned int b = 0; b < i.size(); b += batchSize)
+			unsigned int completed = 0;
+			while (completed < in.size())
 			{
-				// Add up the cost of this batch...
-				neurons batchCost(expected.size());
-				unsigned int batchEnd = b + batchSize < i.size() ? batchSize : i.size() - b;
-				for (int o = b; o < batchEnd; ++o)
+				#pragma omp critical
 				{
-					std::vector<neurons> obs = feedForward::observation(result, i[b]);
-					neurons localCost = cost::observation(obs.back(), expected[b].neurons(), cost::Fn[C]);
-
-					// update the batchCost...
-					{
-
-					}
-
+					bbc(completed / batchSize, result);
 				}
 
-				result = backPropagate(result, i[b], expected[b].neurons(), C, learningRate);
+				unsigned int end = completed + batchSize < static_cast<unsigned int>(in.size()) ? completed + batchSize : static_cast<unsigned int>(in.size()) - completed;
 
+				neurons batchInput = in[completed].neurons();
+				neurons batchExpected = expected[completed].neurons();
+				
+				#pragma omp parallel for
+				for (int b = completed; b < static_cast<int>(end); ++b)
+				{
+
+					// Perform the observation...
+					std::vector<neurons> obs = feedForward::observation(result, in[b]);
+
+					#pragma omp critical
+					{
+						// update the input, expected...
+						batchInput = maths::add(batchInput, in[b].neurons());
+						batchExpected = maths::add(batchExpected, expected[b].neurons());
+
+						occ(completed / batchSize, b - completed, result);
+					}
+				}
+
+				batchInput = maths::scale(batchInput, 1.0 / batchSize);
+				batchExpected = maths::scale(batchExpected, 1.0 / batchSize);
+				result = backPropagate(result, input(batchInput.values()), batchExpected, C, learningRate);
+
+				completed += batchSize;
+				bcc(completed / batchSize, result);
 			}
-			
+
 			return result;
 		}
 

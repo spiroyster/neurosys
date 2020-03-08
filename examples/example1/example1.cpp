@@ -42,29 +42,89 @@ int main(int argc, char** argv)
 		std::cout << "Untrained. " << correct << " observations: " << (static_cast<double>(correct) / static_cast<double>(testImages.size())) * 100.0 << " % correct.\n";
 
         // single training...
-        
-        
-        
-        
-		// training...
-        for (unsigned int m = 0; m < trainImages.size(); ++m)
-        {
-            std::cout << "Training " << m << ". ";
-            
-            // train the model.
-            net = neurosys::feedForward::backPropagate(net, trainImages[m], trainLabels[m].neurons(), neurosys::cost::squaredError, 0.1);
+		bool singleTraining = false;
+		bool batchTraining = false;
 
-            // test the new model...
-            correct = neurosys::MNIST::test(net, testImages, testLabels);
-            
-            std::cout << correct << " observations: " << (static_cast<double>(correct) / static_cast<double>(testImages.size())) * 100.0 << " % correct.\n";
-        }
+
+		if (singleTraining)
+		{
+			for (unsigned int m = 0; m < trainImages.size(); ++m)
+			{
+				std::cout << "Training " << m << ". ";
+
+				// train the model.
+				net = neurosys::feedForward::backPropagate(net, trainImages[m], trainLabels[m].neurons(), neurosys::cost::function::squaredError, 0.01);
+
+				// test the new model...
+				correct = neurosys::MNIST::test(net, testImages, testLabels);
+
+				std::cout << correct << " observations: " << (static_cast<double>(correct) / static_cast<double>(testImages.size())) * 100.0 << " % correct.\n";
+			}
+		}
+		
+
+		// batch...
+		//for (unsigned int m = 0; m < trainImages.size(); ++m)
+		//{
+		//	std::cout << "Training Batch " << m << ". ";
+
+		//	// train the model.
+		//	net = neurosys::feedForward::backPropagate(net, trainImages, trainLabels, neurosys::cost::function::squaredError, 0.01, 32);
+
+		//	// test the new model...
+		//	correct = neurosys::MNIST::test(net, testImages, testLabels);
+
+		//	std::cout << correct << " observations: " << (static_cast<double>(correct) / static_cast<double>(testImages.size())) * 100.0 << " % correct.\n";
+		//}
+
+		// batch train the model.
+		/*unsigned int batchSize = 10;
+		unsigned int batchProgress = 0;
+
+		net = neurosys::feedForward::backPropagate(net, trainImages, trainLabels, neurosys::cost::function::squaredError, 0.01, batchSize,
+			[&trainImages, &batchSize, &batchProgress](unsigned int b, const neurosys::network& result) 
+			{ 
+				std::cout << "Training batch #" << b << " (" << batchSize * b << "/" << trainImages.size() << ") |"; 
+				batchProgress = 0;
+			},
+			[&testImages, &testLabels](unsigned int b, const neurosys::network& result) 
+			{
+				std::cout << " Testing...";
+				unsigned int correct = neurosys::MNIST::test(result, testImages, testLabels);
+				std::cout << (static_cast<double>(correct) / static_cast<double>(testImages.size())) * 100.0 << "% correct.\n";
+			},
+			[&batchSize, &batchProgress](unsigned int b, unsigned int n, const neurosys::network& result) 
+			{
+				unsigned int currentBatchProgress = static_cast<unsigned int>(static_cast<double>(n) * 10.0 / batchSize);
+				if (currentBatchProgress != batchProgress)
+				{
+					std::cout << "=";
+					currentBatchProgress = batchProgress;
+				}
+				if (n == batchSize - 1)
+					std::cout << "|";
+				
+			});*/
+
+		// Training batch #4 (128/60000) |======================| (9.8% correct).
+
+
+		//for (unsigned int m = 0; m < trainImages.size(); ++m)
+		//{
+		//	std::cout << "Training Batch " << m << ". ";
+
+		//	
+		//	// test the new model...
+		//	correct = neurosys::MNIST::test(net, testImages, testLabels);
+
+		//	std::cout << correct << " observations: " << (static_cast<double>(correct) / static_cast<double>(testImages.size())) * 100.0 << " % correct.\n";
+		//}
          
 		return 0;
 	}
 	catch (const std::exception& e)
 	{
-		std::wcout << "ERR! " << e.what();
+		std::cout << "ERR! " << e.what();
 	}
 	
 	return 1;

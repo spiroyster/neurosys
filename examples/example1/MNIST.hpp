@@ -81,7 +81,7 @@ namespace neurosys
 			std::vector<neurosys::input> result(count, neurosys::input(imagePixelCount));
 			for (int n = 0; n < count; ++n)
 				for (int nn = 0; nn < imagePixelCount; ++nn)
-					result[n].neuron(nn) = static_cast<double>(pixels[n*imagePixelCount + nn]) / 255.0;
+					result[n].weights()[nn] = static_cast<double>(pixels[n*imagePixelCount + nn]) / 255.0;
 			
 			return result;
 		}
@@ -90,8 +90,9 @@ namespace neurosys
 		static unsigned int test(const network& net, const std::vector<input>& i, const std::vector<output>& o)
         {
             unsigned int result = 0;
-            #pragma omp for
-            for (unsigned int n = 0; n < i.size(); ++n)
+            
+			#pragma omp parallel for
+            for (int n = 0; n < i.size(); ++n)
             {
                 unsigned int resultCorrect = neurosys::maths::largest(neurosys::feedForward::observation(net, i[n]).back()) == neurosys::maths::largest(o[n].weights()) ? 1 : 0;
                 if (resultCorrect)
