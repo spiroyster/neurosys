@@ -188,28 +188,44 @@ namespace neurosys
 		};
 
 		typedef std::function<neurons(const neurons&, const neurons&)> costFn;
+		typedef std::function<double(const neurons&, const neurons&)> networkCostFn;
 
 		std::vector<costFn> Fn
 		{
 			[](const neurons& output, const neurons& expected) 
 			{
-				neurons result(maths::subtract(output, expected).values()); 
-				return maths::hadamard(result, result); 
-			}
-			/*[](const neurons& output, const neurons& expected) 
+				// 0.5 * (expected - output)^2
+				neurons result(maths::subtract(expected, output).values()); 
+				return maths::scale(maths::hadamard(result, result), 0.5); 
+			},
+
+			[](const neurons& output, const neurons& expected) 
 			{ 
 				neurons result = output;
-				std::for_each(result.values().begin(), result.values().end(), [&expected](const double& v) { return v * std::log(expected); });
-				return -maths:sum(result);
-			}*/
+				for (unsigned int i = 0; i < result.size(); ++i)
+					result[i] = -expected[i] * std::log(result[i]);
+				return result;
+			}
 		};
 
 		std::vector<costFn> FnPrime
 		{
-			[](const neurons& output, const neurons& expected) { return maths::subtract(output, expected); },
-			//[](const neurons& output, const neurons& expected) { return maths::subtract(output, expected); }
+			[](const neurons& output, const neurons& expected) { return maths::subtract(expected, output); },
+			[](const neurons& output, const neurons& expected) { return maths::subtract(expected, output); }
 		};
 
+		std::vector<networkCostFn> NetworkFn
+		{
+			// MSE...
+			[](const neurons& output, const neurons& expected) 
+			{
+				return maths::mean(Fn[squaredError](output, expected));
+			},
+			[](const neurons& output, const neurons& expected)
+			{
+				return -maths::mean(Fn[crossEntropy](output, expected));
+			}
+		};
 		
 	}
 

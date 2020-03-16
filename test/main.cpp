@@ -25,8 +25,6 @@ TEST_CASE("activation linear", "[activation]")
 	CHECK(neurosys::activation::Fn[neurosys::activation::function::linear](0.9) == Approx(0.9));
 	CHECK(neurosys::activation::Fn[neurosys::activation::function::linear](1.0) == Approx(1.0));
 }
-
-
 TEST_CASE("activation sigmoid", "[activation]")
 {
 	CHECK(neurosys::activation::Fn[neurosys::activation::function::sigmoid](0) == Approx(0.5));
@@ -41,7 +39,6 @@ TEST_CASE("activation sigmoid", "[activation]")
 	CHECK(neurosys::activation::Fn[neurosys::activation::function::sigmoid](0.9) == Approx(0.7109495026));
 	CHECK(neurosys::activation::Fn[neurosys::activation::function::sigmoid](1.0) == Approx(0.7310585786));
 }
-
 TEST_CASE("activation linearPrime", "[activation][derivative]")
 {
 	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::linear](0) == Approx(1.0));
@@ -57,7 +54,6 @@ TEST_CASE("activation linearPrime", "[activation][derivative]")
 	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::linear](1.0) == Approx(1.0));
 	
 }
-
 TEST_CASE("activation sigmoidPrime", "[activation][derivative]")
 {
 	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::sigmoid](0) == Approx(0));
@@ -75,6 +71,8 @@ TEST_CASE("activation sigmoidPrime", "[activation][derivative]")
 
 // squared error... cross entropy...
 
+
+// mean, median, sum etc...
 
 
 TEST_CASE("matrix empty", "[matrix]")
@@ -253,7 +251,7 @@ TEST_CASE("neurons construct", "[neurons][construct]")
 		CHECK(m.value(1) == 0);
 	}
 	{
-		neurosys::neurons m({ { 1.0, 2.0 } });
+		neurosys::neurons m(std::vector<double>({ 1.0, 2.0 }));
 		CHECK(m.size() == 2);
 		CHECK(m.isColumnVector());
 		CHECK(!m.isRowVector());

@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 		std::cout << "Untrained. " << correct << " observations: " << (static_cast<double>(correct) / static_cast<double>(testImages.size())) * 100.0 << " % correct.\n";
 
         // single training...
-		bool singleTraining = false;
+		bool singleTraining = true;
 		bool batchTraining = false;
 
 
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 				std::cout << "Training " << m << ". ";
 
 				// train the model.
-				net = neurosys::feedForward::backPropagate(net, trainImages[m], trainLabels[m].neurons(), neurosys::cost::function::squaredError, 0.01);
+				net = neurosys::feedForward::backPropagate(net, trainImages[m], trainLabels[m].neurons(), neurosys::cost::function::crossEntropy, 0.01);
 
 				// test the new model...
 				correct = neurosys::MNIST::test(net, testImages, testLabels);
