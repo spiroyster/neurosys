@@ -5,7 +5,6 @@
 
 #include <array>
 #include <fstream>
-#include <filesystem>
 #include <stdexcept>
 
 namespace neurosys
@@ -85,29 +84,6 @@ namespace neurosys
 			
 			return result;
 		}
-
-
-		static unsigned int test(const network& net, const std::vector<input>& i, const std::vector<output>& o)
-        {
-            unsigned int result = 0;
-            
-			#pragma omp parallel for
-            for (int n = 0; n < i.size(); ++n)
-            {
-                unsigned int resultCorrect = neurosys::maths::largest(neurosys::feedForward::observation(net, i[n]).back()) == neurosys::maths::largest(o[n].weights()) ? 1 : 0;
-                if (resultCorrect)
-                {
-                    #pragma omp critical
-                    {
-                        ++result;
-                    }
-                }
-            }
-            return result;
-        }
-    
-
-
 	}
 }
 

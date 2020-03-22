@@ -670,3 +670,29 @@ TEST_CASE("anotsorandomwalk", "[anotsorandomwalk]")
 	CHECK(bp[2].bias() == Approx(0.4986412902));
 
 }
+
+TEST_CASE("mattmazur", "[mattmazur]")
+{
+	// https://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/
+
+	neurosys::network net(
+		neurosys::input(2),
+		{ neurosys::layer(2,neurosys::activation::sigmoid, 0.35) },
+		neurosys::output(2, neurosys::activation::sigmoid, 0.6)
+	);
+
+	net[1].weight(0, 0) = 0.15;
+	net[1].weight(0, 1) = 0.2;
+	net[1].weight(1, 0) = 0.25;
+	net[1].weight(1, 1) = 0.3;
+	net[2].weight(0, 0) = 0.4;
+	net[2].weight(0, 1) = 0.45;
+	net[2].weight(1, 0) = 0.5;
+	net[2].weight(1, 1) = 0.55;
+
+	neurosys::input in({ 0.05, 0.1 });
+
+
+
+
+}
