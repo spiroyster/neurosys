@@ -591,20 +591,6 @@ TEST_CASE("network construct", "[network][construct]")
     }
 }
 
-TEST_CASE("feedForward z", "[feedForward][z]")
-{
-
-
-
-}
-
-TEST_CASE("feedForward a", "[feedForward][a]")
-{
-
-
-
-}
-
 TEST_CASE("feedForward observation", "[feedForward][observation]")
 {
 

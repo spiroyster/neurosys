@@ -32,22 +32,28 @@ int main(int argc, char** argv)
 
 		// Reset our neural network. This sets both the bias and weights to random values.
 		net.reset();
+		while (1==1)
+		{
+			// train the network....
+			net = neurosys::train(net, trainImages, trainLabels, neurosys::cost::function::crossEntropy, 0.01,
+				[&testImages, &testLabels](const neurosys::network& net, double cost)
+				{
+					// test the network...
+					neurosys::test(net, testImages, testLabels,
+						[](const neurosys::input& i, const neurosys::output& o, const neurosys::output& expected)
+						{
+							return neurosys::maths::largest(o.neurons()) == neurosys::maths::largest(expected.neurons());
+						});
 
-		// train the network....
-		neurosys::train(net, trainImages, trainLabels, neurosys::cost::function::crossEntropy, 0.01, 32,
-			[&testImages, &testLabels](const neurosys::network& net, double cost)
-			{
-				// test the network...
-				neurosys::test(net, testImages, testLabels, 
-					[](const neurosys::input& i, const neurosys::output& o, const neurosys::output& expected)
-					{
-						return neurosys::maths::largest(o.neurons()) == neurosys::maths::largest(expected.neurons());
-					});
-						
-				// carry on...
-				return true;
-			});
 
+					std::cout << "\n";
+
+					// carry on...
+					return true;
+				});
+
+		}
+		
 		
 		
 		return 0;
