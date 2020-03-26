@@ -3,70 +3,55 @@
 
 #include "../include/neurosys.hpp"
 
-namespace
-{
-    bool ApproxEquals(const double& a, const double& b)
-    {
-        return sqrt((b-a)*(b-a)) < 0.01;
-    }
-}
+//namespace
+//{
+//    /*bool ApproxEquals(const double& a, const double& b)
+//    {
+//        return sqrt((b-a)*(b-a)) < 0.01;
+//    }
+//
+//	bool ApproxEquals(const neurosys::neurons& a, const neurosys::neurons& b)
+//	{
+//		for (unsigned int n = 0; n < a.values().size(); ++n)
+//			if (a.values()[n] != Approx(b.values()[n]))
+//				return false;
+//
+//		return true;
+//	}*/
+//}
+
 
 TEST_CASE("activation linear", "[activation]")
 {
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::linear](0) == Approx(0));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::linear](0.1) == Approx(0.1));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::linear](0.2) == Approx(0.2));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::linear](0.3) == Approx(0.3));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::linear](0.4) == Approx(0.4));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::linear](0.5) == Approx(0.5));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::linear](0.6) == Approx(0.6));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::linear](0.7) == Approx(0.7));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::linear](0.8) == Approx(0.8));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::linear](0.9) == Approx(0.9));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::linear](1.0) == Approx(1.0));
+	neurosys::neurons in({ 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 });
+	neurosys::neurons expected({ 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 });
+	neurosys::neurons result = neurosys::activation::Fn[neurosys::activation::function::linear](in);
+	for (unsigned int n = 0; n < in.size(); ++n)
+		CHECK(result[n] == Approx(expected[n]));
 }
 TEST_CASE("activation sigmoid", "[activation]")
 {
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::sigmoid](0) == Approx(0.5));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::sigmoid](0.1) == Approx(0.5249791875));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::sigmoid](0.2) == Approx(0.5498339973));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::sigmoid](0.3) == Approx(0.5744425168));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::sigmoid](0.4) == Approx(0.5986876601));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::sigmoid](0.5) == Approx(0.6224593312));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::sigmoid](0.6) == Approx(0.6456563062));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::sigmoid](0.7) == Approx(0.6681877722));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::sigmoid](0.8) == Approx(0.6899744811));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::sigmoid](0.9) == Approx(0.7109495026));
-	CHECK(neurosys::activation::Fn[neurosys::activation::function::sigmoid](1.0) == Approx(0.7310585786));
+	neurosys::neurons in({ 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 });
+	neurosys::neurons expected({ 0.5, 0.5249791875, 0.5498339973, 0.5744425168, 0.5986876601, 0.6224593312, 0.6456563062, 0.6681877722, 0.6899744811, 0.7109495026, 0.7310585786 });
+	neurosys::neurons result = neurosys::activation::Fn[neurosys::activation::function::sigmoid](in);
+	for (unsigned int n = 0; n < in.size(); ++n)
+		CHECK(result[n] == Approx(expected[n]));
 }
 TEST_CASE("activation linearPrime", "[activation][derivative]")
 {
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::linear](0) == Approx(1.0));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::linear](0.1) == Approx(1.0));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::linear](0.2) == Approx(1.0));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::linear](0.3) == Approx(1.0));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::linear](0.4) == Approx(1.0));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::linear](0.5) == Approx(1.0));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::linear](0.6) == Approx(1.0));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::linear](0.7) == Approx(1.0));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::linear](0.8) == Approx(1.0));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::linear](0.9) == Approx(1.0));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::linear](1.0) == Approx(1.0));
-	
+	neurosys::neurons in({ 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 });
+	neurosys::neurons expected({ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 });
+	neurosys::neurons result = neurosys::activation::FnPrime[neurosys::activation::function::linear](in);
+	for (unsigned int n = 0; n < in.size(); ++n)
+		CHECK(result[n] == Approx(expected[n]));
 }
 TEST_CASE("activation sigmoidPrime", "[activation][derivative]")
 {
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::sigmoid](0) == Approx(0));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::sigmoid](0.1) == Approx(0.09));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::sigmoid](0.2) == Approx(0.16));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::sigmoid](0.3) == Approx(0.21));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::sigmoid](0.4) == Approx(0.24));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::sigmoid](0.5) == Approx(0.25));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::sigmoid](0.6) == Approx(0.24));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::sigmoid](0.7) == Approx(0.21));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::sigmoid](0.8) == Approx(0.16));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::sigmoid](0.9) == Approx(0.09));
-	CHECK(neurosys::activation::FnPrime[neurosys::activation::function::sigmoid](1.0) == Approx(0));
+	neurosys::neurons in({ 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 });
+	neurosys::neurons expected({ 0, 0.09, 0.16, 0.21, 0.24, 0.25, 0.24, 0.21, 0.16, 0.09, 0 });
+	neurosys::neurons result = neurosys::activation::FnPrime[neurosys::activation::function::sigmoid](in);
+	for (unsigned int n = 0; n < in.size(); ++n)
+		CHECK(result[n] == Approx(expected[n]));
 }
 
 // squared error... cross entropy...
@@ -82,7 +67,6 @@ TEST_CASE("matrix empty", "[matrix]")
 		CHECK(m.size() == 0);
 		CHECK(!m.isColumnVector());
 		CHECK(!m.isRowVector());
-
 	}
 	{
 		neurosys::matrix m(1, 0);
@@ -106,7 +90,6 @@ TEST_CASE("matrix square construction", "[matrix][construct]")
 		CHECK(m.isColumnVector());
 		CHECK(m.isRowVector());
 		CHECK(m.value(0, 0) == 0);
-
 	}
 	{
 		neurosys::matrix m({{ 42.0 }}, 1);
@@ -149,7 +132,7 @@ TEST_CASE("matrix mn construct", "[matrix][construct]")
 		CHECK(m.value(0, 1) == 0);
 	}
 	{
-		neurosys::matrix m({ 1.0, 2.0 }, 1);
+		neurosys::matrix m({ { 1.0, 2.0 } }, 1);
 		CHECK(m.size() == 2);
 		CHECK(m.isColumnVector());
 		CHECK(!m.isRowVector());
@@ -157,7 +140,7 @@ TEST_CASE("matrix mn construct", "[matrix][construct]")
 		CHECK(m.value(0, 1) == 2.0);
 	}
 	{
-		neurosys::matrix m({ 1.0, 2.0 }, 1);
+		neurosys::matrix m({ { 1.0, 2.0 } }, 1);
 		CHECK(m.size() == 2);
 		CHECK(m.isColumnVector());
 		CHECK(!m.isRowVector());
@@ -558,7 +541,6 @@ TEST_CASE("perceptron construct", "[perceptron][network][construct]")
 
 TEST_CASE("network construct", "[network][construct]")
 {
-    
     {
         neurosys::network net(neurosys::input(1), { neurosys::layer(1, neurosys::activation::linear) }, neurosys::output(1, neurosys::activation::linear, 1.0));
         CHECK(net.size() == 3);        
@@ -591,14 +573,14 @@ TEST_CASE("network construct", "[network][construct]")
     }
 }
 
-TEST_CASE("feedForward observation", "[feedForward][observation]")
+TEST_CASE("network feedForward", "[network][observation]")
 {
 
 
 
 }
 
-TEST_CASE("feedForward backPropagate", "[feedForward][backPropagate]")
+TEST_CASE("network backPropagate", "[network][backPropagate]")
 {
     
 }
@@ -629,16 +611,16 @@ TEST_CASE("anotsorandomwalk", "[anotsorandomwalk]")
 
 	neurosys::input in({ 1.0, 4.0, 5.0 });
 
-	std::vector<neurosys::neurons> result = neurosys::feedForward::observation(net, in);
+	neurosys::observation result = neurosys::feedForward(net, in);
 
-    CHECK(result[1].value(0) == Approx(0.9866130822));
-	CHECK(result[1].value(1) == Approx(0.9950331983));
-    CHECK(result[2].value(0) == Approx(0.889550614));
-    CHECK(result[2].value(1) == Approx(0.8004));
+    CHECK(result.a_[1].value(0) == Approx(0.9866130822));
+	CHECK(result.a_[1].value(1) == Approx(0.9950331983));
+    CHECK(result.a_[2].value(0) == Approx(0.889550614));
+    CHECK(result.a_[2].value(1) == Approx(0.8004));
     
 	// Perform the back prop.
 	neurosys::output expected(neurosys::neurons(std::vector<double>({ 0.1, 0.05 })));
-	neurosys::network bp = neurosys::feedForward::backPropagate(net, in, expected.neurons(), neurosys::cost::squaredError, 0.01);
+	neurosys::network bp = neurosys::backPropagate(net, in, expected, neurosys::cost::squaredError, 0.01);
 	
 	// Check the weights of the resultant net.
 	CHECK(bp[1].weight(0, 0) == Approx(0.0996679595));

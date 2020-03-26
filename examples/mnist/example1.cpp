@@ -35,7 +35,7 @@ int main(int argc, char** argv)
 		while (1==1)
 		{
 			// train the network....
-			net = neurosys::train(net, trainImages, trainLabels, neurosys::cost::function::crossEntropy, 0.01,
+			net = neurosys::train(net, trainImages, trainLabels, neurosys::cost::function::crossEntropy, 0.01, 1,
 				[&testImages, &testLabels](const neurosys::network& net, double cost)
 				{
 					// test the network...
