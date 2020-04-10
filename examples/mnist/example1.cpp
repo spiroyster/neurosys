@@ -27,24 +27,27 @@ int main(int argc, char** argv)
 		std::cout << "done.\n";
 
         // Create our neural network. 
-		neurosys::network net(testImages.front(), { neurosys::layer(32, neurosys::activation::sigmoid) }, 
-			neurosys::output(10, neurosys::activation::sigmoid, 1.0));
+		neurosys::network net(testImages.front(), { neurosys::layer(800, neurosys::activation::sigmoid) }, 
+			neurosys::output(10, neurosys::activation::sigmoid, 0.1));
 
 		// Reset our neural network. This sets both the bias and weights to random values.
 		net.reset();
-		while (1==1)
+
+		double accuracy = 0;
+		while (accuracy < 0.5)
 		{
 			// train the network....
-			net = neurosys::train(net, trainImages, trainLabels, neurosys::cost::function::crossEntropy, 0.01, 1,
-				[&testImages, &testLabels](const neurosys::network& net, double cost)
+			net = neurosys::train(net, trainImages, trainLabels, neurosys::loss::function::crossEntropy, 1, 1,
+				[&trainImages, &trainLabels, &accuracy](const neurosys::network& net, double cost)
 				{
 					// test the network...
-					neurosys::test(net, testImages, testLabels,
+					unsigned int correct = neurosys::test(net, trainImages, trainLabels,
 						[](const neurosys::input& i, const neurosys::output& o, const neurosys::output& expected)
 						{
 							return neurosys::maths::largest(o.neurons()) == neurosys::maths::largest(expected.neurons());
 						});
 
+					accuracy = static_cast<double>(correct)/static_cast<double>(trainImages.size());
 
 					std::cout << "\n";
 
@@ -53,8 +56,6 @@ int main(int argc, char** argv)
 				});
 
 		}
-		
-		
 		
 		return 0;
 	}
