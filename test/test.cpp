@@ -740,9 +740,28 @@ TEST_CASE("network construct", "[network][construct]")
 
 TEST_CASE("network feedForward", "[network][observation]")
 {
-	// create a network, manually calculate the feedforward and then check...
+	{
+		//neurosys::network net();
+	}
+
+	// 1 1
 
 
+	// 2 3
+
+
+	// 3 2
+
+
+	// 3 3 3
+	
+	
+
+	// 3 3 2
+
+
+
+	// 4 1
 
 
 }
@@ -788,19 +807,19 @@ TEST_CASE("anotsorandomwalk", "[anotsorandomwalk]")
 	neurosys::network bp = neurosys::backPropagate(net, result, error, 0.01);
 	
 	// Check the weights of the resultant net.
-	CHECK(bp[1].weight(0, 0) == Approx(0.0996679595));
-	CHECK(bp[1].weight(0, 1) == Approx(0.1998484889));
-	CHECK(bp[1].weight(1, 0) == Approx(0.298671838));
-	CHECK(bp[1].weight(1, 1) == Approx(0.3993939555));
-	CHECK(bp[1].weight(2, 0) == Approx(0.4983397975));
-	CHECK(bp[1].weight(2, 1) == Approx(0.5992424443));
-	CHECK(bp[1].bias() == Approx(0.4997582242));
+	CHECK(bp[1].weight(0, 0) == Approx(0.0999801609));
+	CHECK(bp[1].weight(0, 1) == Approx(0.1999959571));
+	CHECK(bp[1].weight(1, 0) == Approx(0.2999206435));
+	CHECK(bp[1].weight(1, 1) == Approx(0.3999838284));
+	CHECK(bp[1].weight(2, 0) == Approx(0.4999008044));
+	CHECK(bp[1].weight(2, 1) == Approx(0.5999797855));
+	CHECK(bp[1].bias() == Approx(0.499988059));
 
-	CHECK(bp[2].weight(0, 0) == Approx(0.6987056418));
-	CHECK(bp[2].weight(0, 1) == Approx(0.7986133166));
-	CHECK(bp[2].weight(1, 0) == Approx(0.8986945953));
-	CHECK(bp[2].weight(1, 1) == Approx(0.0986014821));
-	CHECK(bp[2].bias() == Approx(0.4986412902));
+	CHECK(bp[2].weight(0, 0) == Approx(0.6992346487));
+	CHECK(bp[2].weight(0, 1) == Approx(0.7988172098));
+	CHECK(bp[2].weight(1, 0) == Approx(0.8992281169));
+	CHECK(bp[2].weight(1, 1) == Approx(0.0988071154));
+	CHECK(bp[2].bias() == Approx(0.4990127125));
 
 }
 
