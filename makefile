@@ -3,6 +3,7 @@ CXX=g++-9
 
 
 build_test: ./test/test.cpp
+	mkdir -p bin
 	$(CXX) test/test.cpp -o bin/test
 
 build_example_xor: ./examples/xor/xor.cpp
