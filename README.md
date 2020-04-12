@@ -10,14 +10,7 @@ Simply include neurosys.hpp and you're off.
 
 The neurosys namespace contains everything required to create neural networks and train these networks to learn and predict.
 
-Current support:
-
-* feedforward neural networks.
-* backpropagation through gd and sgd.
-
-## Build
-
-## nix
+### Build nix.
 
 There is a makefile at root which will build binaries and place them in bin folder.
 
@@ -33,9 +26,16 @@ Or spcifically build the various examples...
 
     make build_example_xor
 
-### win
+### Build win
 
 VS2017 solution file can be found /msvc/neurosys.sln and contains all the test and example projects which will be built into bin.
+
+# Current support:
+
+* feedforward neural networks.
+* backpropagation through gd and sgd.
+* Sigmoid, softmax and tanh activations.
+* Squared Error  (MSE) and Cross Entropy (CE) loss functions.
 
 # Roadmap
 
