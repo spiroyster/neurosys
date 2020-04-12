@@ -55,6 +55,14 @@ TEST_CASE("activation softmax", "[activation][softmax]")
 	for (unsigned int n = 0; n < in.size(); ++n)
 		CHECK(result[n] == Approx(expected[n]));
 }
+TEST_CASE("activation tanh", "[activation][tanh]")
+{
+	neurosys::neurons in({ 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 });
+	neurosys::neurons expected({ 0, 0.09966799462, 0.1973753202, 0.2913126125, 0.3799489623, 0.4621171573, 0.537049567, 0.6043677771, 0.6640367703, 0.7162978702, 0.761594156 });
+	neurosys::neurons result = neurosys::activation::Fn[neurosys::activation::function::tanh](in);
+	for (unsigned int n = 0; n < in.size(); ++n)
+		CHECK(result[n] == Approx(expected[n]));
+}
 TEST_CASE("activation linearPrime", "[activation][prime][linear]")
 {
 	neurosys::neurons in({ 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 });
@@ -74,8 +82,16 @@ TEST_CASE("activation sigmoidPrime", "[activation][prime][sigmoid]")
 TEST_CASE("activation softmaxPrime", "[activation][prime][softmax]")
 {
 	neurosys::neurons in({ 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 });
-	neurosys::neurons expected({ 0, 0.005247615, 0.01049523012, 0.01574284518, 0.02099046024, 0.02623807529, 0.03148569035, 0.03673330541, 0.04198092047, 0.04722853553, 0.05247615059 });
+	neurosys::neurons expected({ 0, 0.09, 0.16, 0.21, 0.24, 0.25, 0.24, 0.21, 0.16, 0.09, 0 });
 	neurosys::neurons result = neurosys::activation::FnPrime[neurosys::activation::function::softMax](in);
+	for (unsigned int n = 0; n < in.size(); ++n)
+		CHECK(result[n] == Approx(expected[n]));
+}
+TEST_CASE("activation tanhPrime", "[activation][prime][tanh]")
+{
+	neurosys::neurons in({ 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 });
+	neurosys::neurons expected({ 1.0, 0.9900662908, 0.961042983, 0.9151369618, 0.8556387861, 0.786447733, 0.7115777626, 0.63473959, 0.5590551677, 0.4869173611, 0.4199743416 });
+	neurosys::neurons result = neurosys::activation::FnPrime[neurosys::activation::function::tanh](in);
 	for (unsigned int n = 0; n < in.size(); ++n)
 		CHECK(result[n] == Approx(expected[n]));
 }
@@ -519,7 +535,7 @@ TEST_CASE("matrix multiply", "[matrix][multiply]")
 	{
 		neurosys::matrix m({ {1.0} }, 1);
 		neurosys::matrix n({ {1.0} }, 1);
-		neurosys::matrix result = neurosys::maths::product(m, n);
+		neurosys::matrix result = neurosys::maths::multiply(m, n);
 
 		CHECK(result.size() == 1);
 		CHECK(result.value(0, 0) == 1.0);
@@ -527,7 +543,8 @@ TEST_CASE("matrix multiply", "[matrix][multiply]")
 	{
 		neurosys::matrix m({ {1.0, 2.0, 3.0 } }, 3);
 		neurosys::matrix n({ {1.0, 2.0, 3.0 } }, 1);
-		neurosys::matrix result = neurosys::maths::product(m, n);
+		neurosys::matrix result = neurosys::maths::multiply(m, n);
+
 
 		CHECK(result.size() == 1);
 		CHECK(result.value(0, 0) == 14.0);
@@ -535,7 +552,7 @@ TEST_CASE("matrix multiply", "[matrix][multiply]")
 	{
 		neurosys::matrix m({ {1.0, 2.0, 3.0 } }, 1);
 		neurosys::matrix n({ {1.0, 2.0, 3.0 } }, 3);
-		neurosys::matrix result = neurosys::maths::product(m, n);
+		neurosys::matrix result = neurosys::maths::multiply(m, n);
 
 		CHECK(result.size() == 9);
 		CHECK(result.value(0, 0) == 1.0);
@@ -551,7 +568,7 @@ TEST_CASE("matrix multiply", "[matrix][multiply]")
 	{
 		neurosys::matrix m({ {1.0, 2.0, 3.0, 4.0 } }, 2);
 		neurosys::matrix n({ {1.0, 2.0, 3.0, 4.0 } }, 2);
-		neurosys::matrix result = neurosys::maths::product(m, n);
+		neurosys::matrix result = neurosys::maths::multiply(m, n);
 
 		CHECK(result.size() == 4);
 		CHECK(result.value(0, 0) == 7.0);
@@ -640,6 +657,7 @@ TEST_CASE("matrix add matrix", "[matrix][add]")
 |  _    ||    ___|  |   |  |       ||  |_|  ||    __  ||     |_ 
 | | |   ||   |___   |   |  |   _   ||       ||   |  | ||    _  |
 |_|  |__||_______|  |___|  |__| |__||_______||___|  |_||___| |_|
+
 */
 
 TEST_CASE("perceptron construct", "[perceptron][network][construct]")
@@ -757,7 +775,7 @@ TEST_CASE("anotsorandomwalk", "[anotsorandomwalk]")
 	net[2].weight(1, 1) = 0.1;
 
 	neurosys::input in({ 1.0, 4.0, 5.0 });
-	std::vector<neurosys::neurons> result = neurosys::feedForward(net, in);
+	neurosys::observation result = neurosys::feedForward(net, in);
 
     CHECK(result[1].value(0) == Approx(0.9866130822));
 	CHECK(result[1].value(1) == Approx(0.9950331983));
@@ -765,23 +783,24 @@ TEST_CASE("anotsorandomwalk", "[anotsorandomwalk]")
     CHECK(result[2].value(1) == Approx(0.8004));
     
 	// Perform the back prop.
-	//neurosys::output expected(neurosys::neurons(std::vector<double>({ 0.1, 0.05 })));
-	//neurosys::network bp = neurosys::backPropagate(net, in, expected, neurosys::loss::squaredError, 0.01);
+	neurosys::output expected(neurosys::neurons(std::vector<double>({ 0.1, 0.05 })));
+	neurosys::neurons error = neurosys::loss::FnPrime[neurosys::loss::squaredError](result.back(), expected.neurons());
+	neurosys::network bp = neurosys::backPropagate(net, result, error, 0.01);
 	
 	// Check the weights of the resultant net.
-	//CHECK(bp[1].weight(0, 0) == Approx(0.0996679595));
-	//CHECK(bp[1].weight(0, 1) == Approx(0.1998484889));
-	//CHECK(bp[1].weight(1, 0) == Approx(0.298671838));
-	//CHECK(bp[1].weight(1, 1) == Approx(0.3993939555));
-	//CHECK(bp[1].weight(2, 0) == Approx(0.4983397975));
-	//CHECK(bp[1].weight(2, 1) == Approx(0.5992424443));
-	//CHECK(bp[1].bias() == Approx(0.4997582242));
+	CHECK(bp[1].weight(0, 0) == Approx(0.0996679595));
+	CHECK(bp[1].weight(0, 1) == Approx(0.1998484889));
+	CHECK(bp[1].weight(1, 0) == Approx(0.298671838));
+	CHECK(bp[1].weight(1, 1) == Approx(0.3993939555));
+	CHECK(bp[1].weight(2, 0) == Approx(0.4983397975));
+	CHECK(bp[1].weight(2, 1) == Approx(0.5992424443));
+	CHECK(bp[1].bias() == Approx(0.4997582242));
 
-	//CHECK(bp[2].weight(0, 0) == Approx(0.6987056418));
-	//CHECK(bp[2].weight(0, 1) == Approx(0.7986133166));
-	//CHECK(bp[2].weight(1, 0) == Approx(0.8986945953));
-	//CHECK(bp[2].weight(1, 1) == Approx(0.0986014821));
-	//CHECK(bp[2].bias() == Approx(0.4986412902));
+	CHECK(bp[2].weight(0, 0) == Approx(0.6987056418));
+	CHECK(bp[2].weight(0, 1) == Approx(0.7986133166));
+	CHECK(bp[2].weight(1, 0) == Approx(0.8986945953));
+	CHECK(bp[2].weight(1, 1) == Approx(0.0986014821));
+	CHECK(bp[2].bias() == Approx(0.4986412902));
 
 }
 
@@ -819,7 +838,7 @@ TEST_CASE("mattmazur", "[mattmazur]")
 // https://medium.com/@rajatgupta310198/getting-started-with-neural-network-for-regression-and-tensorflow-58ad3bd75223
 // regression example...
 
-
+// https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html
 
 // XOR ann  example...
 

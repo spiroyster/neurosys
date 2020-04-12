@@ -54,7 +54,6 @@ namespace neurosys
 
 		const double& value(unsigned int n) const { return values_[n]; }
 		double& value(unsigned int n) { return values_[n]; }
-
 	};
 
 	namespace maths
@@ -69,8 +68,10 @@ namespace neurosys
 			return result;
 		}
 
+		// products...
+
 		// multiply
-		matrix product(const matrix& a, const matrix& b)
+		matrix multiply(const matrix& a, const matrix& b)
 		{
 			assert(a.n() == b.m());
 			matrix result(a.m(), b.n());
@@ -87,15 +88,6 @@ namespace neurosys
 			return result;
 		}
 
-		matrix scale(const matrix& m, double scalar)
-		{
-			matrix result = m;
-			for (unsigned int r = 0; r < result.size(); ++r)
-				result[r] *= scalar;
-			return result;
-		}
-
-
 		matrix hadamard(const matrix& a, const matrix& b)
 		{
 			assert(a.m() == b.m());
@@ -104,6 +96,20 @@ namespace neurosys
 			matrix result = a;
 			for (unsigned int r = 0; r < result.size(); ++r)
 				result[r] *= b[r];
+			return result;
+		}
+
+		// kronecker product 
+		matrix kronecker(const matrix& a, const matrix& b)
+		{
+			return multiply(a, transpose(b));
+		}
+
+		matrix scale(const matrix& m, double scalar)
+		{
+			matrix result = m;
+			for (unsigned int r = 0; r < result.size(); ++r)
+				result[r] *= scalar;
 			return result;
 		}
 
@@ -161,7 +167,8 @@ namespace neurosys
 		{
 			sigmoid,
 			linear,
-			softMax
+			softMax,
+			tanh
 		};
 
 		typedef std::function<neurons(const neurons&)> activationFn;
@@ -188,6 +195,13 @@ namespace neurosys
 				for (unsigned int i = 0; i < result.size(); ++i)
 					result[i] /= sum;
 				return result;
+			},
+			[](const neurons& a)
+			{
+				neurons result = a;
+				for (unsigned int i = 0; i < result.size(); ++i)
+					result[i] = std::tanh(result[i]);
+				return result;
 			}
 		};
 
@@ -209,6 +223,16 @@ namespace neurosys
 				neurons result = z;
 				for (unsigned int i = 0; i < result.size(); ++i)
 					result[i] = result[i] * (1.0 - result[i]); 
+				return result;
+			},
+			[](const neurons& z)
+			{
+				neurons result = z;
+				for (unsigned int i = 0; i < result.size(); ++i)
+				{
+					double v = std::tanh(z[i]);
+					result[i] = 1 - (v * v);
+				}
 				return result;
 			}
 		};
@@ -401,7 +425,7 @@ namespace neurosys
 		for (unsigned int l = 1; l < net.size(); ++l)
 		{
 			// z = [a(l) * w(l+1) + b(l+1) l) ...
-			neurosys::matrix z = maths::add(maths::product(net[l].weights(), static_cast<neurosys::neurons>(result.back())), net[l].bias());
+			neurosys::matrix z = maths::add(maths::multiply(net[l].weights(), static_cast<neurosys::neurons>(result.back())), net[l].bias());
 
 			// a = sigma(z) ... Activate the neurons in this layer...
 			result.push_back(activation::Fn[net[l].activation()](z));
@@ -431,11 +455,11 @@ namespace neurosys
 		for (unsigned int l = net.size() - 1; l > 0; --l)
 		{
 			// Calculate the delta weight matrix...
-			result[l].weights() = maths::product(delta, maths::transpose(obs[l - 1]));
+			result[l].weights() = maths::kronecker(delta, obs[l - 1]); //maths::multiply(delta, maths::transpose(obs[l - 1]));
 			result[l].bias(maths::mean(delta));
 
 			// calculate the next delta output... dE(l) -> dE(l-1)
-			dO = neurons(maths::product(maths::transpose(net[l].weights()), delta).values());
+			dO = neurons(maths::multiply(maths::transpose(net[l].weights()), delta).values());
 
 			// calculate the new deltaZ... dZ(l) -> dZ(l-1)
 			dZ = activation::FnPrime[net[l-1].activation()](obs[l-1]);
