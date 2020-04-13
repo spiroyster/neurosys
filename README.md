@@ -1,4 +1,4 @@
-# About
+# Neurosys
 
 C++ header only Nueral network framework. C++11 & STL only.
 
@@ -8,11 +8,26 @@ Simply include neurosys.hpp and you're off.
 
     #include "neurosys.hpp"
 
-The neurosys namespace contains everything required to create neural networks and train these networks to learn and predict.
+The neurosys namespace contains everything required to create neural networks and start training...
 
-### Build nix.
+### Current support.
 
-There is a makefile at root which will build binaries and place them in bin folder.
+* feedforward neural networks.
+* backpropagation through gd and sgd.
+* Sigmoid, softmax and tanh activations.
+* Squared Error  (MSE) and Cross Entropy (CE) loss functions.
+
+# Build
+
+neurosys is a header only library so no compilation for the library is required. There are examples and tests which are included and these are built and deposited in /neurosys/bin.
+
+## win (VS2017)
+
+VS2017 solution file can be found /msvc/neurosys.sln and contains all the test and example projects.
+
+## *nix (GCC)
+
+Makefile supplied for bulding with gcc.
 
 To build the tests...
 
@@ -26,17 +41,7 @@ Or spcifically build the various examples...
 
     make build_example_xor
 
-### Build win
 
-VS2017 solution file can be found /msvc/neurosys.sln and contains all the test and example projects which will be built into bin.
-
-# Current support:
-
-* feedforward neural networks.
-* backpropagation through gd and sgd.
-* Sigmoid, softmax and tanh activations.
-* Squared Error  (MSE) and Cross Entropy (CE) loss functions.
-
-# Roadmap
+## Roadmap
 
 Ideally the end goal is to support CNN, RNN and various other generative machine learning algorithms to perform style transfer and hopefully somthing akin to StyleGAN.
